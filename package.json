@@ -1,0 +1,13 @@
+{
+  "name": "health-tracking-and-coach-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Health Tracking and Coach Monorepo",
+  "workspaces": [
+    "apps/frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "build:frontend": "npm run build -w apps/frontend"
+  }
+}

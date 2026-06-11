@@ -1,0 +1,47 @@
+services:
+  # Database Container (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: aurafit_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: aurafit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # Python FastAPI Backend Container
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: aurafit_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/backend:/app
+    environment:
+      - ENV=development
+      - PORT=8000
+      - DATABASE_URL=postgresql://admin:adminpassword@db:5432/aurafit
+    depends_on:
+      - db
+    restart: always
+
+  # React Frontend Container (Production build served via Nginx or dev server)
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: aurafit_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
