@@ -1,14 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
+
+import os
+import shutil
+import uuid
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Dict, Union
 import json
+import base64
 from datetime import datetime
 from pydantic import BaseModel
 
 import models
 import schemas
 import auth
+import email_service
 from database import engine, get_db, Base
 
 # Create tables
@@ -18,6 +24,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 app = FastAPI(title="AuraFit AI Core API", version="1.0.0")
+
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -79,7 +87,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     
     activation_token = auth.create_activation_token(new_user.email)
-    return {"message": "Đăng ký thành công", "activation_token": activation_token}
+    email_service.send_activation_email(new_user.email, activation_token)
+    return {"message": "Vui lòng kiểm tra email để kích hoạt tài khoản."}
 
 @app.get("/api/auth/activate/{token}")
 def activate_account(token: str, db: Session = Depends(get_db)):
@@ -119,7 +128,8 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     if not user:
         return {"message": "Nếu email tồn tại, link đổi mật khẩu sẽ được gửi đi."}
     reset_token = auth.create_reset_token(user.email)
-    return {"message": "Vui lòng kiểm tra email để đặt lại mật khẩu.", "reset_token": reset_token}
+    email_service.send_reset_password_email(user.email, reset_token)
+    return {"message": "Vui lòng kiểm tra email để đặt lại mật khẩu."}
 
 class ResetPasswordRequest(BaseModel):
     token: str
@@ -139,6 +149,24 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     user.password_hash = hashed_password
     db.commit()
     return {"message": "Đổi mật khẩu thành công"}
+
+@app.put("/api/auth/account")
+def update_account(payload: schemas.AccountUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if not auth.verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Mật khẩu hiện tại không chính xác")
+        
+    if payload.email != current_user.email:
+        existing_user = db.query(models.User).filter(models.User.email == payload.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email này đã được sử dụng")
+        current_user.email = payload.email
+        
+    if payload.new_password:
+        current_user.password_hash = auth.get_password_hash(payload.new_password)
+        
+    db.commit()
+    return {"message": "Cập nhật tài khoản thành công"}
+
 
 @app.get("/api/auth/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
@@ -281,6 +309,17 @@ def save_profile(profile_data: schemas.ProfileCreateUpdate, db: Session = Depend
 
     # 2. Save to DB
     profile = current_user.profile
+    
+    # Check if we should regenerate workout schedule
+    should_regenerate_workout = True
+    if profile:
+        # If user already has a profile, only regenerate if goal, equipment, or experience changed
+        if (profile.goal == profile_data.goal and 
+            profile.equipment == profile_data.equipment and 
+            profile.experience == profile_data.experience and 
+            profile.workout_schedule):
+            should_regenerate_workout = False
+
     if not profile:
         profile = models.UserProfile(user_id=current_user.id)
         db.add(profile)
@@ -295,7 +334,10 @@ def save_profile(profile_data: schemas.ProfileCreateUpdate, db: Session = Depend
     profile.bmr = bmr
     profile.tdee = tdee
     profile.target_calories = target_calories
-    profile.workout_schedule = workout_schedule
+    
+    if should_regenerate_workout:
+        profile.workout_schedule = workout_schedule
+        
     profile.nutrition_plan = nutrition_plan
 
     db.commit()
@@ -325,6 +367,28 @@ def update_profile_avatar(payload: UpdateAvatarRequest, db: Session = Depends(ge
     profile.avatar_url = payload.avatar_url
     db.commit()
     return {"avatar_url": profile.avatar_url}
+
+@app.post("/api/profile/avatar/upload")
+def upload_avatar(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    profile = current_user.profile
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Giới hạn 5MB
+    contents = file.file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.")
+    
+    # Encode thành base64 data URL và lưu vào database
+    file_extension = file.filename.split(".")[-1].lower()
+    mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}
+    mime_type = mime_map.get(file_extension, "image/png")
+    b64_data = base64.b64encode(contents).decode("utf-8")
+    avatar_url = f"data:{mime_type};base64,{b64_data}"
+    
+    profile.avatar_url = avatar_url
+    db.commit()
+    return {"avatar_url": avatar_url}
 
 # --- EXERCISES ---
 @app.get("/api/exercises", response_model=List[schemas.ExerciseResponse])

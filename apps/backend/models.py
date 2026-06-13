@@ -30,7 +30,7 @@ class UserProfile(Base):
     goal = Column(String, nullable=False)
     equipment = Column(String, nullable=False)
     experience = Column(String, nullable=False)
-    avatar_url = Column(String, nullable=True)
+    avatar_url = Column(Text, nullable=True)
     
     # AI Calculated fields
     bmi = Column(Float)

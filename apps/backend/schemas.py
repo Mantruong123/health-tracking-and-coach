@@ -29,6 +29,11 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class AccountUpdate(BaseModel):
+    email: EmailStr
+    current_password: str
+    new_password: Optional[str] = None
+
 # --- PROFILE SCHEMAS ---
 class ProfileCreateUpdate(BaseModel):
     name: str
