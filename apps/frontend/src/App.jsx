@@ -31,6 +31,7 @@ function App() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [resetTokenForTest, setResetTokenForTest] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
 
   // Onboarding Wizard step
   const [wizardStep, setWizardStep] = useState(1);
@@ -39,6 +40,14 @@ function App() {
   });
 
   // Filter state for exercise list
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [accountFormData, setAccountFormData] = useState({ name: '', dob: '', gender: 'Nam', height: 170, weight: 65, email: '', currentPassword: '', newPassword: '', confirmNewPassword: '' });
+  const [accountActiveTab, setAccountActiveTab] = useState('profile');
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [isOnboardingRetake, setIsOnboardingRetake] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [muscleFilter, setMuscleFilter] = useState('Tất cả');
   
   // Edit Exercises state
@@ -186,7 +195,6 @@ function App() {
       const data = await res.json();
 
       if (res.ok) {
-        setActivationTokenForTest(data.activation_token);
         setRegisterForm({ username: '', email: '', password: '', confirmPassword: '' });
         setAppState('activation_pending');
       } else {
@@ -219,6 +227,27 @@ function App() {
     setAppState('landing');
   };
 
+  // URL parameters handling for Email links
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const token = params.get('token');
+    
+    if (action === 'activate' && token) {
+      handleActivateAccount(token);
+    } else if (action === 'reset_password' && token) {
+      setResetTokenForTest(token);
+      setAppState('reset_password');
+    }
+    
+    // Clear URL to avoid re-triggering
+    if (action && token) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  
+
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -230,7 +259,6 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        if (data.reset_token) setResetTokenForTest(data.reset_token);
         setAppState('forgot_password_pending');
       } else {
         setAuthError(data.detail || 'Có lỗi xảy ra.');
@@ -243,6 +271,10 @@ function App() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setAuthError('');
+    if (resetPassword !== resetConfirmPassword) {
+      setAuthError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
@@ -337,6 +369,7 @@ function App() {
         
         setCurrentUser(updatedUser);
         setAppState('dashboard');
+        setIsOnboardingRetake(false);
       } else {
         const errData = await res.json().catch(() => ({}));
         alert(`Có lỗi xảy ra khi lưu hồ sơ: ${errData.detail || 'Vui lòng kiểm tra lại thông tin.'}`);
@@ -349,6 +382,142 @@ function App() {
   // ==========================================================================
   // RENDER HELPERS
   // ==========================================================================
+
+  const renderWizardContent = () => (
+    <div className="wizard-container glass-card" onClick={(e) => e.stopPropagation()} style={{ marginTop: isOnboardingRetake ? '0' : '50px', position: isOnboardingRetake ? 'relative' : 'static', width: isOnboardingRetake ? '100%' : 'auto', maxWidth: isOnboardingRetake ? '550px' : 'none', margin: isOnboardingRetake ? 'auto' : '50px auto', padding: '30px' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '8px' }}>AI Khảo Sát Thể Trạng</h2>
+      <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
+        {isOnboardingRetake ? 'Cập nhật lại mục tiêu và thể trạng để AI tính toán lịch tập mới.' : 'Điền thông tin để thuật toán AI phân lớp và đề xuất chế độ tốt nhất dành riêng cho bạn.'}
+      </p>
+
+      <div className="wizard-progress">
+        <div className="wizard-progress-bar"></div>
+        {isOnboardingRetake ? (
+          <>
+            <div className="wizard-progress-fill" style={{ width: `${((wizardStep - 3) / 1) * 100}%` }}></div>
+            <div className={`progress-step ${wizardStep >= 3 ? 'active' : ''} ${wizardStep > 3 ? 'completed' : ''}`}>1</div>
+            <div className={`progress-step ${wizardStep >= 4 ? 'active' : ''}`}>2</div>
+          </>
+        ) : (
+          <>
+            <div className="wizard-progress-fill" style={{ width: `${((wizardStep - 1) / 3) * 100}%` }}></div>
+            <div className={`progress-step ${wizardStep >= 1 ? 'active' : ''} ${wizardStep > 1 ? 'completed' : ''}`}>1</div>
+            <div className={`progress-step ${wizardStep >= 2 ? 'active' : ''} ${wizardStep > 2 ? 'completed' : ''}`}>2</div>
+            <div className={`progress-step ${wizardStep >= 3 ? 'active' : ''} ${wizardStep > 3 ? 'completed' : ''}`}>3</div>
+            <div className={`progress-step ${wizardStep >= 4 ? 'active' : ''}`}>4</div>
+          </>
+        )}
+      </div>
+
+      <div>
+        {wizardStep === 1 && !isOnboardingRetake && (
+          <div className="step-content animate-slide-up">
+            <h3 style={{ marginBottom: '20px' }}>Bước 1: Thông tin cơ bản</h3>
+            <div className="form-group">
+              <label className="form-label">Tên hiển thị của bạn</label>
+              <input type="text" required className="form-input" value={onboardingData.name} onChange={(e) => setOnboardingData({ ...onboardingData, name: e.target.value })} />
+            </div>
+            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label className="form-label">Ngày sinh (DD-MM-YYYY)</label>
+                <input type="text" placeholder="VD: 15-08-1998" required className="form-input" value={onboardingData.dob} onChange={(e) => setOnboardingData({ ...onboardingData, dob: e.target.value })} />
+              </div>
+              <div>
+                <label className="form-label">Giới tính</label>
+                <select className="form-input" value={onboardingData.gender} onChange={(e) => setOnboardingData({ ...onboardingData, gender: e.target.value })}>
+                  <option>Nam</option><option>Nữ</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+        {wizardStep === 2 && !isOnboardingRetake && (
+          <div className="step-content animate-slide-up">
+            <h3 style={{ marginBottom: '20px' }}>Bước 2: Chỉ số cơ thể</h3>
+            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label className="form-label">Chiều cao (cm)</label>
+                <input type="number" min="100" max="250" required className="form-input" value={onboardingData.height} onChange={(e) => setOnboardingData({ ...onboardingData, height: parseInt(e.target.value) || 170 })} />
+              </div>
+              <div>
+                <label className="form-label">Cân nặng (kg)</label>
+                <input type="number" min="30" max="200" required className="form-input" value={onboardingData.weight} onChange={(e) => setOnboardingData({ ...onboardingData, weight: parseInt(e.target.value) || 60 })} />
+              </div>
+            </div>
+          </div>
+        )}
+        {wizardStep === 3 && (
+          <div className="step-content animate-slide-up">
+            <h3 style={{ marginBottom: '20px' }}>{isOnboardingRetake ? 'Bước 1' : 'Bước 3'}: Chọn mục tiêu chính</h3>
+            <div className="options-grid">
+              <div className={`option-card ${onboardingData.goal === 'lose_weight' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'lose_weight' })}>
+                <span className="option-icon">🔥</span><span className="option-title">Giảm Cân</span>
+              </div>
+              <div className={`option-card ${onboardingData.goal === 'build_muscle' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'build_muscle' })}>
+                <span className="option-icon">💪</span><span className="option-title">Tăng Cơ Bắp</span>
+              </div>
+              <div className={`option-card ${onboardingData.goal === 'improve_endurance' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'improve_endurance' })}>
+                <span className="option-icon">🏃</span><span className="option-title">Sức Bền</span>
+              </div>
+              <div className={`option-card ${onboardingData.goal === 'stay_fit' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'stay_fit' })}>
+                <span className="option-icon">🧘</span><span className="option-title">Duy Trì Dáng</span>
+              </div>
+            </div>
+          </div>
+        )}
+        {wizardStep === 4 && (
+          <div className="step-content animate-slide-up">
+            <h3 style={{ marginBottom: '16px' }}>{isOnboardingRetake ? 'Bước 2' : 'Bước 4'}: Thiết bị & Kinh nghiệm</h3>
+            
+            <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>Dụng cụ tập luyện sẵn có</label>
+            <div className="options-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+              <div className={`option-card ${onboardingData.equipment === 'none' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'none' })} style={{ padding: '8px 12px', gap: '6px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🙌</span><span className="option-title" style={{ fontSize: '0.85rem' }}>Không dụng cụ</span>
+              </div>
+              <div className={`option-card ${onboardingData.equipment === 'dumbbell' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'dumbbell' })} style={{ padding: '8px 12px', gap: '6px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏋️</span><span className="option-title" style={{ fontSize: '0.85rem' }}>Tạ đôi</span>
+              </div>
+              <div className={`option-card ${onboardingData.equipment === 'barbell' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'barbell' })} style={{ padding: '8px 12px', gap: '6px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏋️‍♀️</span><span className="option-title" style={{ fontSize: '0.85rem' }}>Tạ đòn</span>
+              </div>
+              <div className={`option-card ${onboardingData.equipment === 'gym' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'gym' })} style={{ padding: '8px 12px', gap: '6px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏢</span><span className="option-title" style={{ fontSize: '0.85rem' }}>Phòng Gym</span>
+              </div>
+            </div>
+
+            <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>Mức độ hoạt động</label>
+            <div className="options-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              <div className={`option-card ${onboardingData.experience === 'sedentary' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, experience: 'sedentary' })} style={{ padding: '8px 12px', flexDirection: 'column', gap: '4px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>💻</span><span className="option-title" style={{ fontSize: '0.8rem' }}>Ít vận động</span>
+              </div>
+              <div className={`option-card ${onboardingData.experience === 'active' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, experience: 'active' })} style={{ padding: '8px 12px', flexDirection: 'column', gap: '4px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏃</span><span className="option-title" style={{ fontSize: '0.8rem' }}>Năng động</span>
+              </div>
+              <div className={`option-card ${onboardingData.experience === 'athletic' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, experience: 'athletic' })} style={{ padding: '8px 12px', flexDirection: 'column', gap: '4px' }}>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏅</span><span className="option-title" style={{ fontSize: '0.8rem' }}>Chuyên nghiệp</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="wizard-actions" style={{ display: 'flex' }}>
+          {wizardStep > (isOnboardingRetake ? 3 : 1) && (
+            <button type="button" className="btn-secondary" onClick={() => setWizardStep(wizardStep - 1)}>Quay Lại</button>
+          )}
+          {isOnboardingRetake && wizardStep === 3 && (
+            <button type="button" className="btn-secondary" onClick={() => setIsOnboardingRetake(false)}>Hủy Bỏ</button>
+          )}
+          <div style={{ flex: 1 }}></div>
+          {wizardStep < 4 ? (
+            <button type="button" className="btn-primary" onClick={(e) => { e.preventDefault(); setWizardStep(wizardStep + 1); }}>Tiếp Tục ➜</button>
+          ) : (
+            <button type="button" className="btn-primary" onClick={handleOnboardingSubmit}>Hoàn Thành 🚀</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   const renderHeader = () => {
     if (!currentUser || currentUser.isAdmin) return null; // Don't show full header for non-logged in or Admin
 
@@ -390,7 +559,20 @@ function App() {
                   <button 
                     className="dropdown-item"
                     onClick={() => {
-                      alert('Chức năng Thông tin tài khoản đang được phát triển.');
+                      if (currentUser && currentUser.userData) {
+                        setAccountFormData({
+                          name: currentUser.userData.name,
+                          dob: currentUser.userData.dob,
+                          gender: currentUser.userData.gender,
+                          height: currentUser.userData.height,
+                          weight: currentUser.userData.weight,
+                          email: currentUser.email,
+                          currentPassword: '',
+                          newPassword: ''
+                        });
+                        setAccountActiveTab('profile');
+                        setIsAccountModalOpen(true);
+                      }
                       setIsDropdownOpen(false);
                     }}
                   >
@@ -458,7 +640,7 @@ function App() {
             <button 
               className="btn-secondary" 
               onClick={handleLogout} 
-              style={{ padding: '8px 16px', fontSize: '0.9rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}
+              style={{ padding: '6px 14px', fontSize: '0.85rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}
             >
               🚪 Đăng xuất
             </button>
@@ -965,6 +1147,10 @@ function App() {
                     <label className="form-label">Mật khẩu mới</label>
                     <input type="password" required className="form-input" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} placeholder="••••••••" />
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">Xác nhận mật khẩu mới</label>
+                    <input type="password" required className="form-input" value={resetConfirmPassword} onChange={(e) => setResetConfirmPassword(e.target.value)} placeholder="••••••••" />
+                  </div>
                   {authError && <div className="form-error">{authError}</div>}
                   <button type="submit" className="btn-primary full-width" style={{ marginTop: '16px' }}>Đổi Mật Khẩu</button>
                 </form>
@@ -1034,117 +1220,8 @@ function App() {
           {/* ==========================================================================
              3. ONBOARDING WIZARD
              ========================================================================== */}
-          {appState === 'onboarding' && (
-            <div className="wizard-container glass-card" style={{ marginTop: '50px' }}>
-              <h2 style={{ textAlign: 'center', marginBottom: '12px' }}>AI Khảo Sát Thể Trạng</h2>
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '32px' }}>
-                Điền thông tin để thuật toán AI phân lớp và đề xuất chế độ tốt nhất dành riêng cho bạn.
-              </p>
-
-              <div className="wizard-progress">
-                <div className="wizard-progress-bar"></div>
-                <div className="wizard-progress-fill" style={{ width: `${((wizardStep - 1) / 3) * 100}%` }}></div>
-                <div className={`progress-step ${wizardStep >= 1 ? 'active' : ''} ${wizardStep > 1 ? 'completed' : ''}`}>1</div>
-                <div className={`progress-step ${wizardStep >= 2 ? 'active' : ''} ${wizardStep > 2 ? 'completed' : ''}`}>2</div>
-                <div className={`progress-step ${wizardStep >= 3 ? 'active' : ''} ${wizardStep > 3 ? 'completed' : ''}`}>3</div>
-                <div className={`progress-step ${wizardStep >= 4 ? 'active' : ''}`}>4</div>
-              </div>
-
-              <form onSubmit={handleOnboardingSubmit}>
-                {wizardStep === 1 && (
-                  <div className="step-content">
-                    <h3 style={{ marginBottom: '20px' }}>Bước 1: Thông tin cơ bản</h3>
-                    <div className="form-group">
-                      <label className="form-label">Tên hiển thị của bạn</label>
-                      <input 
-                        type="text" required className="form-input" 
-                        value={onboardingData.name}
-                        onChange={(e) => setOnboardingData({ ...onboardingData, name: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label className="form-label">Ngày sinh (DD-MM-YYYY)</label>
-                        <input type="text" placeholder="VD: 15-08-1998" required className="form-input" value={onboardingData.dob} onChange={(e) => setOnboardingData({ ...onboardingData, dob: e.target.value })} />
-                      </div>
-                      <div>
-                        <label className="form-label">Giới tính</label>
-                        <select className="form-input" value={onboardingData.gender} onChange={(e) => setOnboardingData({ ...onboardingData, gender: e.target.value })}>
-                          <option>Nam</option><option>Nữ</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {wizardStep === 2 && (
-                  <div className="step-content">
-                    <h3 style={{ marginBottom: '20px' }}>Bước 2: Chỉ số cơ thể</h3>
-                    <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label className="form-label">Chiều cao (cm)</label>
-                        <input type="number" min="100" max="250" required className="form-input" value={onboardingData.height} onChange={(e) => setOnboardingData({ ...onboardingData, height: parseInt(e.target.value) || 170 })} />
-                      </div>
-                      <div>
-                        <label className="form-label">Cân nặng (kg)</label>
-                        <input type="number" min="30" max="200" required className="form-input" value={onboardingData.weight} onChange={(e) => setOnboardingData({ ...onboardingData, weight: parseInt(e.target.value) || 60 })} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {wizardStep === 3 && (
-                  <div className="step-content">
-                    <h3 style={{ marginBottom: '20px' }}>Bước 3: Chọn mục tiêu chính</h3>
-                    <div className="options-grid">
-                      <div className={`option-card ${onboardingData.goal === 'lose_weight' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'lose_weight' })}>
-                        <span className="option-icon">🔥</span><span className="option-title">Giảm Cân</span>
-                      </div>
-                      <div className={`option-card ${onboardingData.goal === 'build_muscle' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'build_muscle' })}>
-                        <span className="option-icon">💪</span><span className="option-title">Tăng Cơ Bắp</span>
-                      </div>
-                      <div className={`option-card ${onboardingData.goal === 'improve_endurance' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'improve_endurance' })}>
-                        <span className="option-icon">🏃</span><span className="option-title">Sức Bền</span>
-                      </div>
-                      <div className={`option-card ${onboardingData.goal === 'stay_fit' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'stay_fit' })}>
-                        <span className="option-icon">🧘</span><span className="option-title">Duy Trì Dáng</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {wizardStep === 4 && (
-                  <div className="step-content">
-                    <h3 style={{ marginBottom: '20px' }}>Bước 4: Thiết bị & Kinh nghiệm</h3>
-                    <div className="form-group">
-                      <label className="form-label">Dụng cụ tập luyện sẵn có</label>
-                      <select className="form-input" value={onboardingData.equipment} onChange={(e) => setOnboardingData({ ...onboardingData, equipment: e.target.value })}>
-                        <option value="none">Không có dụng cụ (Calisthenics)</option>
-                        <option value="dumbbell">Tạ đôi tay (Dumbbells)</option>
-                        <option value="barbell">Tạ đòn thanh dài (Barbell)</option>
-                        <option value="gym">Phòng Gym thương mại</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Mức độ hoạt động</label>
-                      <select className="form-input" value={onboardingData.experience} onChange={(e) => setOnboardingData({ ...onboardingData, experience: e.target.value })}>
-                        <option value="sedentary">Ít vận động (Dân văn phòng)</option>
-                        <option value="active">Trung bình (Năng động)</option>
-                        <option value="athletic">Thể thao chuyên nghiệp</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                <div className="wizard-actions">
-                  {wizardStep > 1 && (
-                    <button type="button" className="btn-secondary" onClick={() => setWizardStep(wizardStep - 1)}>Quay Lại</button>
-                  )}
-                  {wizardStep < 4 ? (
-                    <button type="button" className="btn-primary" onClick={() => setWizardStep(wizardStep + 1)}>Tiếp Tục ➜</button>
-                  ) : (
-                    <button type="submit" className="btn-primary">Hoàn Thành Profile 🚀</button>
-                  )}
-                </div>
-              </form>
-            </div>
+          {appState === 'onboarding' && !isOnboardingRetake && (
+            renderWizardContent()
           )}
 
           {/* ==========================================================================
@@ -1155,27 +1232,88 @@ function App() {
               {/* LEFT SIDEBAR: Personal Stats */}
               <aside className="dashboard-sidebar">
                 <div className="glass-card profile-card">
-                  <div className="avatar-glow" onClick={async () => {
-                    const newUrl = prompt('Nhập đường dẫn URL ảnh đại diện của bạn:');
-                    if (newUrl) {
-                      try {
-                        const res = await fetch(`${API_URL}/profile/avatar`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-                          body: JSON.stringify({ avatar_url: newUrl })
-                        });
-                        if (res.ok) {
-                          const updated = { ...currentUser };
-                          updated.userData.avatar_url = newUrl;
-                          setCurrentUser(updated);
-                        }
-                      } catch (err) { alert('Lỗi cập nhật ảnh'); }
+                  <input type="file" id="avatarUpload" style={{ display: 'none' }} accept="image/*" onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    // Giới hạn 5MB
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert('Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
+                      e.target.value = '';
+                      return;
                     }
+                    
+                    // Tạo preview
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setAvatarPreview(reader.result);
+                      setAvatarFile(file);
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }} />
+                  
+                  {/* Avatar Preview Modal */}
+                  {avatarPreview && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}>
+                      <div className="glass-card animate-slide-up" style={{ padding: '24px', maxWidth: '400px', width: '90%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <h3 style={{ marginBottom: '16px' }}>Xem trước Avatar</h3>
+                        <div style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', margin: '0 auto 20px', border: '3px solid var(--color-primary)', boxShadow: '0 0 25px rgba(14,165,233,0.4)' }}>
+                          <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
+                          {avatarFile && `${avatarFile.name} (${(avatarFile.size / 1024 / 1024).toFixed(2)} MB)`}
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}>Hủy</button>
+                          <button className="btn-primary" style={{ flex: 1 }} disabled={isUploadingAvatar} onClick={async () => {
+                            if (!avatarFile) return;
+                            setIsUploadingAvatar(true);
+                            const formData = new FormData();
+                            formData.append('file', avatarFile);
+                            try {
+                              const res = await fetch(`${API_URL}/profile/avatar/upload`, {
+                                method: 'POST',
+                                headers: getAuthHeaders(),
+                                body: formData
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                const updated = { ...currentUser };
+                                updated.userData.avatar_url = data.avatar_url;
+                                setCurrentUser(updated);
+                              } else { alert('Lỗi khi tải ảnh lên'); }
+                            } catch (err) { alert('Lỗi kết nối'); }
+                            setIsUploadingAvatar(false);
+                            setAvatarPreview(null);
+                            setAvatarFile(null);
+                          }}>{isUploadingAvatar ? 'Đang tải...' : 'Xác nhận'}</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="avatar-glow" onClick={() => {
+                      document.getElementById('avatarUpload').click();
                   }} style={{ cursor: 'pointer', backgroundImage: currentUser.userData.avatar_url ? `url(${currentUser.userData.avatar_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', color: currentUser.userData.avatar_url ? 'transparent' : 'inherit' }} title="Nhấn để đổi Avatar">
-                    {currentUser.userData.gender === 'Nam' ? '🧔' : '👩'}
+                    {currentUser.userData.avatar_url ? '' : (currentUser.userData.gender === 'Nam' ? '🧔' : '👩')}
                   </div>
                   <h3 style={{ marginTop: '12px' }}>{currentUser.username}</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>{currentUser.email}</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>{currentUser.email}</p>
+                  <button className="btn-secondary" style={{ width: '100%', marginBottom: '16px', padding: '6px', fontSize: '0.9rem' }} onClick={() => {
+                    setAccountFormData({
+                          name: currentUser.userData.name,
+                          dob: currentUser.userData.dob,
+                          gender: currentUser.userData.gender,
+                          height: currentUser.userData.height,
+                          weight: currentUser.userData.weight,
+                          email: currentUser.email,
+                          currentPassword: '',
+                          newPassword: ''
+                        });
+                        setAccountActiveTab('profile');
+                        setIsAccountModalOpen(true);
+                  }}>⚙️ Cập nhật thông tin</button>
 
                   <div className="stats-grid" style={{ gridTemplateColumns: '1fr', gap: '12px' }}>
                     <div className="stat-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1201,7 +1339,7 @@ function App() {
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{currentUser.aiOutput.bmiStatus}</div>
                       </div>
                     </div>
-                    <div className="stat-item" style={{ marginTop: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '12px', textAlign: 'center' }}>
+                    <div className="stat-item" style={{ marginTop: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: '12px', textAlign: 'center' }}>
                       <div className="stat-label" style={{ marginBottom: '8px' }}>Mục tiêu chính</div>
                       <div className="stat-value" style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--color-primary)' }}>
                         <span>🎯</span> {currentUser.aiOutput.goalLabel}
@@ -1219,8 +1357,8 @@ function App() {
                     className="btn-secondary" 
                     onClick={() => {
                       setOnboardingData(currentUser.userData);
-                      setWizardStep(1);
-                      setAppState('onboarding');
+                      setWizardStep(3);
+                      setIsOnboardingRetake(true);
                     }}
                   >
                     Khảo sát lại mục tiêu 🔄
@@ -1286,13 +1424,13 @@ function App() {
                           {/* Day Selector Tabs */}
                           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                             {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map(day => (
-                                <button key={day} onClick={() => setEditActiveDay(day)} style={{ padding: '8px 16px', fontSize: '0.9rem', border: 'none', background: editActiveDay === day ? 'var(--color-primary)' : 'transparent', color: editActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '8px 8px 0 0', fontWeight: editActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s' }}>
+                                <button key={day} onClick={() => setEditActiveDay(day)} style={{ padding: '6px 14px', fontSize: '0.85rem', border: 'none', background: editActiveDay === day ? 'var(--color-primary)' : 'transparent', color: editActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '8px 8px 0 0', fontWeight: editActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s' }}>
                                     {day} {tempExercises[day]?.length > 0 && `(${tempExercises[day].length})`}
                                 </button>
                             ))}
                           </div>
 
-                          <div className="filter-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px' }}>
+                          <div className="custom-scrollbar" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px' }}>
                             {['Tất cả', 'Cardio', 'Ngực', 'Lưng & Xô', 'Bụng', 'Vai', 'Đùi & Mông', 'Tay trước', 'Tay sau', 'Toàn thân'].map(muscle => (
                                 <button key={muscle} onClick={() => setEditMuscleFilter(muscle)} style={{ padding: '6px 14px', fontSize: '0.85rem', borderRadius: '20px', border: editMuscleFilter === muscle ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)', background: editMuscleFilter === muscle ? 'rgba(56, 189, 248, 0.15)' : 'transparent', color: editMuscleFilter === muscle ? 'var(--color-primary)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>
                                     {muscle}
@@ -1300,7 +1438,7 @@ function App() {
                             ))}
                           </div>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+                          <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px', maxHeight: '380px', overflowY: 'auto', paddingRight: '8px' }}>
                               {exercisesDb.filter(ex => editMuscleFilter === 'Tất cả' || ex.muscle_group === editMuscleFilter).map(ex => {
                                   const isSelected = tempExercises[editActiveDay]?.find(t => t.id === ex.id);
                                   return (
@@ -1335,11 +1473,11 @@ function App() {
 
                     {!isEditingExercises ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', className: 'custom-scrollbar' }}>
                             {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map(day => {
                                 const hasExercises = currentUser.aiOutput.recommendedExercises[day]?.length > 0;
                                 return (
-                                <button key={day} onClick={() => setViewActiveDay(day)} style={{ padding: '8px 16px', fontSize: '0.9rem', border: '1px solid var(--border-glass)', background: viewActiveDay === day ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '20px', fontWeight: viewActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s', position: 'relative' }}>
+                                <button key={day} onClick={() => setViewActiveDay(day)} style={{ padding: '6px 14px', fontSize: '0.85rem', border: '1px solid var(--border-glass)', background: viewActiveDay === day ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '20px', fontWeight: viewActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s', position: 'relative' }}>
                                     {day}
                                     {hasExercises && <span style={{ position: 'absolute', top: '2px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)', boxShadow: '0 0 6px var(--color-primary)' }}></span>}
                                 </button>
@@ -1367,9 +1505,9 @@ function App() {
                                             <h4 style={{ margin: 0, color: 'var(--color-primary)' }}>Giáo án {viewActiveDay}</h4>
                                             <span style={{ fontSize: '0.85rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>🔥 Tổng: <strong>{totalCal} kcal</strong></span>
                                         </div>
-                                        <div className="exercises-grid" style={{ padding: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+                                        <div className="exercises-grid custom-scrollbar" style={{ padding: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                                             {dayExercises.map(ex => (
-                                                <div className="exercise-card compact" style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px' }} key={ex.id}>
+                                                <div className="exercise-card compact" style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px' }} key={ex.id}>
                                                     <div style={{ fontSize: '2.5rem', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '12px', minWidth: '60px', textAlign: 'center' }}>{ex.emoji}</div>
                                                     <div>
                                                         <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', color: '#fff' }}>{ex.name}</h4>
@@ -1387,7 +1525,7 @@ function App() {
                           </div>
                         </div>
                     ) : (
-                        <div className="exercises-grid">
+                        <div className="exercises-grid custom-scrollbar">
                         {(tempExercises[editActiveDay] || []).map(ex => (
                             <div className="exercise-card compact" style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', position: 'relative', transition: 'transform 0.2s', overflow: 'hidden' }} key={ex.id}>
                             <button 
@@ -1403,7 +1541,7 @@ function App() {
                                 ✕
                             </button>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '4px' }}>
-                                <div style={{ fontSize: '3rem', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '16px', minWidth: '80px', textAlign: 'center' }}>{ex.emoji}</div>
+                                <div style={{ fontSize: '3rem', background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '16px', minWidth: '80px', textAlign: 'center' }}>{ex.emoji}</div>
                                 <div style={{ paddingRight: '40px' }}>
                                 <h4 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: '#fff' }}>{ex.name}</h4>
                                 <div className="exercise-details compact" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1499,6 +1637,168 @@ function App() {
             </div>
           )}
 
+          {isOnboardingRetake && (
+            <div className="modal-overlay" onClick={() => setIsOnboardingRetake(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+              {renderWizardContent()}
+            </div>
+          )}
+          
+          {isAccountModalOpen && (
+            <div className="modal-overlay" onClick={() => setIsAccountModalOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+              <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-glass)', position: 'relative' }}>
+                <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>⚙️ Cập nhật thông tin</h2>
+                
+                <div className="section-tabs" style={{ marginBottom: '20px' }}>
+                  <button className={`tab-link ${accountActiveTab === 'profile' ? 'active' : ''}`} onClick={() => setAccountActiveTab('profile')}>👤 Thông tin cá nhân</button>
+                  <button className={`tab-link ${accountActiveTab === 'security' ? 'active' : ''}`} onClick={() => setAccountActiveTab('security')}>🔒 Bảo mật</button>
+                </div>
+
+                {accountActiveTab === 'profile' && (
+                  <div className="animate-slide-up">
+                    <div className="form-group">
+                      <label className="form-label">Tên hiển thị</label>
+                      <input type="text" className="form-input" value={accountFormData.name} onChange={e => setAccountFormData({ ...accountFormData, name: e.target.value })} />
+                    </div>
+                    <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label className="form-label">Ngày sinh (DD-MM-YYYY)</label>
+                        <input type="text" className="form-input" value={accountFormData.dob} onChange={e => setAccountFormData({ ...accountFormData, dob: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="form-label">Giới tính</label>
+                        <select className="form-input" value={accountFormData.gender} onChange={e => setAccountFormData({ ...accountFormData, gender: e.target.value })}>
+                          <option>Nam</option>
+                          <option>Nữ</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label className="form-label">Chiều cao (cm)</label>
+                        <input type="number" className="form-input" value={accountFormData.height} onChange={e => setAccountFormData({ ...accountFormData, height: parseInt(e.target.value) || 0 })} />
+                      </div>
+                      <div>
+                        <label className="form-label">Cân nặng (kg)</label>
+                        <input type="number" className="form-input" value={accountFormData.weight} onChange={e => setAccountFormData({ ...accountFormData, weight: parseInt(e.target.value) || 0 })} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {accountActiveTab === 'security' && (
+                  <div className="animate-slide-up">
+                    <div className="form-group">
+                      <label className="form-label">Email</label>
+                      <input type="email" className="form-input" value={accountFormData.email} onChange={e => setAccountFormData({ ...accountFormData, email: e.target.value })} />
+                    </div>
+                    <div className="form-group" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                      <label className="form-label">Mật khẩu hiện tại (Bắt buộc để lưu thay đổi bảo mật)</label>
+                      <input type="password" placeholder="Nhập mật khẩu hiện tại" className="form-input" value={accountFormData.currentPassword} onChange={e => setAccountFormData({ ...accountFormData, currentPassword: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                      <input type="password" placeholder="Nhập mật khẩu mới" className="form-input" value={accountFormData.newPassword} onChange={e => setAccountFormData({ ...accountFormData, newPassword: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Xác nhận mật khẩu mới</label>
+                      <input type="password" placeholder="Nhập lại mật khẩu mới" className="form-input" value={accountFormData.confirmNewPassword || ''} onChange={e => setAccountFormData({ ...accountFormData, confirmNewPassword: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                  <button className="btn-secondary" onClick={() => setIsAccountModalOpen(false)} style={{ flex: 1 }}>Hủy</button>
+                  <button className="btn-primary" disabled={isSavingAccount} onClick={async () => {
+                    if (accountFormData.newPassword && accountFormData.newPassword !== accountFormData.confirmNewPassword) {
+                          alert('Mật khẩu mới và Xác nhận mật khẩu không khớp!');
+                          return;
+                        }
+                        if ((accountFormData.email !== currentUser.email || accountFormData.newPassword) && !accountFormData.currentPassword) {
+                      alert('Vui lòng nhập Mật khẩu hiện tại để lưu thay đổi Email hoặc Mật khẩu.');
+                      setAccountActiveTab('security');
+                      return;
+                    }
+
+                    setIsSavingAccount(true);
+                    try {
+                      // 1. Update Security if changed
+                      if (accountFormData.email !== currentUser.email || accountFormData.newPassword) {
+                        const authRes = await fetch(`${API_URL}/auth/account`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                          body: JSON.stringify({
+                            email: accountFormData.email,
+                            current_password: accountFormData.currentPassword,
+                            new_password: accountFormData.newPassword || undefined
+                          })
+                        });
+                        if (!authRes.ok) {
+                          const errData = await authRes.json().catch(() => ({}));
+                          alert(errData.detail || 'Lỗi khi cập nhật tài khoản');
+                          setIsSavingAccount(false);
+                          return;
+                        }
+                      }
+
+                      // 2. Update Profile
+                      const payload = {
+                        name: accountFormData.name,
+                        dob: accountFormData.dob,
+                        gender: accountFormData.gender,
+                        height: accountFormData.height,
+                        weight: accountFormData.weight,
+                        goal: currentUser.userData.goal,
+                        equipment: currentUser.userData.equipment,
+                        experience: currentUser.userData.experience
+                      };
+                      const res = await fetch(`${API_URL}/profile`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                        body: JSON.stringify(payload)
+                      });
+                      if (res.ok) {
+                        const newProfile = await res.json();
+                        setCurrentUser({
+                            ...currentUser,
+                            email: accountFormData.email,
+                            userData: {
+                                name: newProfile.name,
+                                dob: newProfile.dob,
+                                gender: newProfile.gender,
+                                height: newProfile.height,
+                                weight: newProfile.weight,
+                                goal: newProfile.goal,
+                                equipment: newProfile.equipment,
+                                experience: newProfile.experience,
+                                avatar_url: newProfile.avatar_url
+                            },
+                            aiOutput: {
+                                bmi: newProfile.bmi,
+                                bmiStatus: newProfile.bmi_status,
+                                targetCalories: newProfile.target_calories,
+                                bmr: newProfile.bmr,
+                                tdee: newProfile.tdee,
+                                goalLabel: newProfile.goal === 'lose_weight' ? 'Giảm cân' : newProfile.goal === 'build_muscle' ? 'Tăng cơ' : newProfile.goal === 'stay_fit' ? 'Giữ dáng' : 'Sức bền',
+                                macros: {
+                                    protein: { grams: Math.round(newProfile.target_calories * 0.3 / 4), color: '#3b82f6' },
+                                    carbs: { grams: Math.round(newProfile.target_calories * 0.4 / 4), color: '#10b981' },
+                                    fat: { grams: Math.round(newProfile.target_calories * 0.3 / 9), color: '#f59e0b' }
+                                },
+                                meals: JSON.parse(newProfile.nutrition_plan || '[]'),
+                                recommendedExercises: JSON.parse(newProfile.workout_schedule || '[]')
+                            }
+                        });
+                        setIsAccountModalOpen(false);
+                        alert('Cập nhật thành công!');
+                      } else { alert('Lỗi khi lưu thông tin cá nhân'); }
+                    } catch (err) { alert('Lỗi kết nối'); }
+                    setIsSavingAccount(false);
+                  }} style={{ flex: 1 }}>{isSavingAccount ? 'Đang lưu...' : 'Lưu Thay Đổi'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ==========================================================================
              5. SYSTEM EXERCISES LIST PAGE
              ========================================================================== */}
@@ -1519,7 +1819,7 @@ function App() {
                 ))}
               </div>
 
-              <div className="exercises-grid">
+              <div className="exercises-grid custom-scrollbar">
                 {getFilteredExercises().map(ex => (
                   <div className="glass-card exercise-card" key={ex.id}>
                     <div className="exercise-img-placeholder">
