@@ -15,6 +15,7 @@ import models
 import schemas
 import auth
 import email_service
+import payment
 from database import engine, get_db, Base
 
 # Create tables
@@ -25,7 +26,7 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI(title="AuraFit AI Core API", version="1.0.0")
 
-
+app.include_router(payment.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -71,7 +72,10 @@ def seed_database(db: Session):
 @app.on_event("startup")
 def on_startup():
     db = next(get_db())
-    seed_database(db)
+    try:
+        seed_database(db)
+    except Exception as e:
+        print(f"Skipping seed_database due to error: {e}")
 
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/register")
@@ -469,3 +473,68 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: model
     db.delete(user)
     db.commit()
     return {"message": "Deleted"}
+
+# --- PROGRESS TRACKING APIs ---
+
+@app.post("/api/progress/workout", response_model=schemas.WorkoutLogResponse)
+def create_workout_log(
+    payload: schemas.WorkoutLogCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    new_log = models.WorkoutLog(
+        user_id=current_user.id,
+        duration_minutes=payload.duration_minutes,
+        calories_burned=payload.calories_burned,
+        notes=payload.notes
+    )
+    db.add(new_log)
+    db.commit()
+    db.refresh(new_log)
+    
+    for ex in payload.exercises:
+        ex_log = models.ExerciseLog(
+            workout_log_id=new_log.id,
+            exercise_id=ex.exercise_id,
+            sets_completed=ex.sets_completed,
+            reps_completed=ex.reps_completed,
+            weight_kg=ex.weight_kg
+        )
+        db.add(ex_log)
+    db.commit()
+    db.refresh(new_log)
+    return new_log
+
+@app.get("/api/progress/workout", response_model=List[schemas.WorkoutLogResponse])
+def get_workout_logs(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    logs = db.query(models.WorkoutLog).filter(models.WorkoutLog.user_id == current_user.id).order_by(models.WorkoutLog.date.desc()).all()
+    return logs
+
+@app.post("/api/progress/measurement", response_model=schemas.BodyMeasurementResponse)
+def create_measurement(
+    payload: schemas.BodyMeasurementCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    new_measurement = models.BodyMeasurement(
+        user_id=current_user.id,
+        weight=payload.weight,
+        body_fat_percentage=payload.body_fat_percentage
+    )
+    db.add(new_measurement)
+    
+    # Update current profile weight
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == current_user.id).first()
+    if profile:
+        profile.weight = payload.weight
+        height_m = profile.height / 100
+        profile.bmi = round(payload.weight / (height_m * height_m), 1)
+        
+    db.commit()
+    db.refresh(new_measurement)
+    return new_measurement
+
+@app.get("/api/progress/measurement", response_model=List[schemas.BodyMeasurementResponse])
+def get_measurements(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    measurements = db.query(models.BodyMeasurement).filter(models.BodyMeasurement.user_id == current_user.id).order_by(models.BodyMeasurement.date.asc()).all()
+    return measurements

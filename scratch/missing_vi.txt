@@ -1,0 +1,96 @@
+5: // API Base URL (sử dụng proxy trong Vite)
+54: const [muscleFilter, setMuscleFilter] = useState('Tất cả');
+59: "Thứ 2": [], "Thứ 3": [], "Thứ 4": [], "Thứ 5": [], "Thứ 6": [], "Thứ 7": [], "Chủ Nhật": []
+61: const [editActiveDay, setEditActiveDay] = useState("Thứ 2");
+62: const [viewActiveDay, setViewActiveDay] = useState("Thứ 2");
+63: const [editMuscleFilter, setEditMuscleFilter] = useState('Tất cả');
+70: name: '', muscle_group: 'Ngực', difficulty: 'beginner', equipment: 'none', calories_estimated: 10, recommended_sets_reps: '3 hiệp x 10 lần', description: '', emoji: '💪'
+73: const [adminExerciseFilter, setAdminExerciseFilter] = useState('Tất cả');
+126: console.error("Lỗi khi load dữ liệu ban đầu:", err);
+176: setAuthError(data.detail || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
+204: setAuthError(data.detail || 'Tên đăng nhập hoặc Email đã tồn tại.');
+220: alert(data.detail || 'Lỗi kích hoạt');
+267: setAuthError(data.detail || 'Có lỗi xảy ra.');
+292: setAuthError(data.detail || 'Có lỗi xảy ra.');
+305: let goalLabel = 'Duy trì vóc dáng';
+306: if (goal === 'lose_weight') goalLabel = 'Giảm cân & Đốt mỡ';
+307: else if (goal === 'build_muscle') goalLabel = 'Tăng cơ & Sức mạnh';
+308: else if (goal === 'improve_endurance') goalLabel = 'Tăng sức bền thể lực';
+329: "Thứ 2": [], "Thứ 3": [], "Thứ 4": [], "Thứ 5": [], "Thứ 6": [], "Thứ 7": [], "Chủ Nhật": []
+335: recommendedExercises["Thứ 2"] = parsed;
+378: alert(`Có lỗi xảy ra khi lưu hồ sơ: ${errData.detail || 'Vui lòng kiểm tra lại thông tin.'}`);
+393: {isOnboardingRetake ? 'Cập nhật lại mục tiêu và thể trạng để AI tính toán lịch tập mới.' : 'Điền thông tin để thuật toán AI phân lớp và đề xuất chế độ tốt nhất dành riêng cho bạn.'}
+454: <h3 style={{ marginBottom: '20px' }}>{isOnboardingRetake ? 'Bước 1' : 'Bước 3'}: Chọn mục tiêu chính</h3>
+473: <h3 style={{ marginBottom: '16px' }}>{isOnboardingRetake ? 'Bước 2' : 'Bước 4'}: Thiết bị & Kinh nghiệm</h3>
+508: <button type="button" className="btn-secondary" onClick={() => setWizardStep(wizardStep - 1)}>{t('Quay Lại')}</button>
+511: <button type="button" className="btn-secondary" onClick={() => setIsOnboardingRetake(false)}>{t('Hủy Bỏ')}</button>
+515: <button type="button" className="btn-primary" onClick={(e) => { e.preventDefault(); setWizardStep(wizardStep + 1); }}>{t('Tiếp Tục ➜')}</button>
+546: {t("List bài tập hệ thống")}
+552: <option value="vi">🇻🇳 Tiếng Việt</option>
+563: Tài khoản user ▼
+589: Thông tin tài khoản
+598: Đăng xuất
+610: if (muscleFilter === 'Tất cả') return exercisesDb;
+631: 👤 Quản lý Users
+637: 🏋️ Quản lý Bài Tập
+718: alert(data.detail || "Lỗi tạo tài khoản");
+723: Tạo Tài Khoản
+754: <span className="status-badge warning">{u.is_active ? t('Chưa cập nhật') : t('Chưa kích hoạt')}</span>
+773: {u.is_admin ? t('Hạ quyền') : t('Cấp Admin')}
+780: if (window.confirm('Xóa user này?')) {
+788: 🗑 Xóa
+891: name: '', muscle_group: 'Ngực', difficulty: 'beginner', equipment: 'none', calories_estimated: 10, recommended_sets_reps: '3 hiệp x 10 lần', description: '', emoji: '💪'
+897: {editingExerciseId ? 'Cập nhật' : 'Thêm +'}
+905: name: '', muscle_group: 'Ngực', difficulty: 'beginner', equipment: 'none', calories_estimated: 10, recommended_sets_reps: '3 hiệp x 10 lần', description: '', emoji: '💪'
+909: Hủy
+924: <option value="Tất cả">{t('t_d8586d08')}</option>
+925: <option value="Ngực">{t('t_bb4e7837')}</option>
+926: <option value="Lưng & Xô">{t('t_4b45ef38')}</option>
+927: <option value="Đùi & Mông">{t('t_ffe3ce42')}</option>
+928: <option value="Bụng">{t('t_682a1b4c')}</option>
+929: <option value="Tay trước">{t('t_36da9362')}</option>
+932: <option value="Toàn thân">{t('t_093dc017')}</option>
+949: {(adminExerciseFilter === 'Tất cả' ? exercisesDb : exercisesDb.filter(ex => ex.muscle_group === adminExerciseFilter)).map(ex => (
+955: <td style={{ color: 'var(--color-primary)' }}>{ex.recommended_sets_reps?.replace("hiệp", t("hiệp"))?.replace("lần", t("lần"))}</td>
+965: calories_estimated: ex.calories_estimated, recommended_sets_reps: ex.recommended_sets_reps?.replace("hiệp", t("hiệp"))?.replace("lần", t("lần")),
+971: ✏ Sửa
+976: if (window.confirm('Xóa bài tập này?')) {
+985: 🗑 Xóa
+1020: Trở Về Dashboard
+1025: Đăng Nhập
+1028: Đăng Ký
+1071: <span className="text-link" onClick={() => setAppState('forgot_password')} style={{ fontSize: '0.85rem' }}>Quên mật khẩu?</span>
+1078: {t('t_66768b62')} <span className="text-link" onClick={() => setAppState('register')}>Đăng ký</span>
+1099: Xác thực Tài khoản
+1105: <button className="btn-secondary" onClick={() => setAppState('login')}>{t('Quay về Đăng nhập')}</button>
+1125: <span className="text-link" onClick={() => setAppState('login')}>{t('Quay về đăng nhập')}</span>
+1143: <button className="btn-primary" onClick={() => setAppState('reset_password')}>{t('Mở form Đặt Lại Mật Khẩu')}</button>
+1224: {t('t_27d2c72f')} <span className="text-link" onClick={() => setAppState('login')}>Đăng nhập</span>
+1249: // Giới hạn 5MB
+1256: // Tạo preview
+1278: <button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}>{t('Hủy')}</button>
+1300: }}>{isUploadingAvatar ? t('Đang tải...') : t('Xác nhận')}</button>
+1326: }}>⚙️ Cập nhật thông tin</button>
+1374: {t("Khảo sát lại mục tiêu 🔄")}
+1383: 🏋️ Lịch Tập Đề Xuất
+1389: 🍳 Chế Độ Dinh Dưỡng
+1399: {/* Section 1: Lịch tập đề xuất */}
+1423: {isEditingExercises ? 'Lưu Thay Đổi' : 'Chỉnh Sửa'}
+1431: <span style={{ fontSize: '0.85rem', background: 'var(--color-primary)', padding: '4px 10px', borderRadius: '20px', color: '#fff', fontWeight: 'bold' }}>{t("Đã chọn:")} {tempExercises[editActiveDay]?.length || 0} {t("bài")}</span>
+1436: {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map(day => (
+1444: {['Tất cả', 'Cardio', 'Ngực', 'Lưng & Xô', 'Bụng', 'Vai', 'Đùi & Mông', 'Tay trước', 'Tay sau', 'Toàn thân'].map(muscle => (
+1452: {exercisesDb.filter(ex => editMuscleFilter === 'Tất cả' || ex.muscle_group === editMuscleFilter).map(ex => {
+1475: {isEditingExercises ? `${t("Danh sách bài tập ngày ")}${editActiveDay}:` : t("Lịch tập theo ngày trong tuần:")}
+1479: 🔥 {t("Ước tính")} ({editActiveDay}): <strong>{(tempExercises[editActiveDay] || []).reduce((sum, ex) => sum + (ex.calories_estimated || 0), 0)} kcal</strong>
+1487: {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map(day => {
+1515: <h4 style={{ margin: 0, color: 'var(--color-primary)' }}>{t("Giáo án ")} {viewActiveDay}</h4>
+1526: <div className="detail-badge" style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)' }}>{t('t_39b4dd4c')} <span style={{ color: 'var(--color-primary)' }}>{ex.recommended_sets_reps?.replace("hiệp", t("hiệp"))?.replace("lần", t("lần"))}</span></div>
+1559: <div className="detail-badge" style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)' }}>{t('t_39b4dd4c')} <span style={{ color: 'var(--color-primary)' }}>{ex.recommended_sets_reps?.replace("hiệp", t("hiệp"))?.replace("lần", t("lần"))}</span></div>
+1570: {/* Section 2: Chế độ dinh dưỡng */}
+1662: <button className={`tab-link ${accountActiveTab === 'profile' ? 'active' : ''}`} onClick={() => setAccountActiveTab('profile')}>👤 Thông tin cá nhân</button>
+1663: <button className={`tab-link ${accountActiveTab === 'security' ? 'active' : ''}`} onClick={() => setAccountActiveTab('security')}>🔒 Bảo mật</button>
+1720: <button className="btn-secondary" onClick={() => setIsAccountModalOpen(false)} style={{ flex: 1 }}>{t('Hủy')}</button>
+1747: alert(errData.detail || 'Lỗi khi cập nhật tài khoản');
+1791: goalLabel: newProfile.goal === 'lose_weight' ? t('Giảm cân') : newProfile.goal === 'build_muscle' ? t('Tăng cơ') : newProfile.goal === 'stay_fit' ? t('Giữ dáng') : t('Sức bền'),
+1806: }} style={{ flex: 1 }}>{isSavingAccount ? t('Đang lưu...') : 'Lưu Thay Đổi'}</button>
+1821: {['Tất cả', 'Ngực', 'Lưng & Xô', 'Đùi & Mông', 'Bụng', 'Tay trước', 'Tay sau', 'Vai', 'Toàn thân'].map(group => (

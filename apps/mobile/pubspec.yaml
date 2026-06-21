@@ -1,0 +1,40 @@
+name: aurafit_mobile
+description: AuraFit AI - Flutter Mobile Client for Health Tracking and Workout Reminders.
+version: 1.0.0+1
+
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+  http: ^1.6.0
+  shared_preferences: ^2.5.5
+  flutter_local_notifications: ^17.2.1
+  percent_indicator: ^4.2.3
+  provider: ^6.1.5+1
+  flutter_secure_storage: ^10.3.1
+  fl_chart: ^1.2.0
+  intl: ^0.20.2
+  google_fonts: ^8.1.0
+  flutter_animate: ^4.5.2
+  camera: ^0.12.0+1
+  google_mlkit_pose_detection: ^0.14.1
+  timezone: ^0.9.4
+  image_picker: ^1.2.2
+  easy_localization: ^3.0.8
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/translations/

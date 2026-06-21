@@ -1,0 +1,27 @@
+51: const [avatarPreview, setAvatarPreview] = useState(null);
+52: const [avatarFile, setAvatarFile] = useState(null);
+53: const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+1245: <input type="file" id="avatarUpload" style={{ display: 'none' }} accept="image/*" onChange={(e) => {
+1259: setAvatarPreview(reader.result);
+1260: setAvatarFile(file);
+1266: {/* Avatar Preview Modal */}
+1267: {avatarPreview && (
+1268: <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}>
+1272: <img src={avatarPreview} alt={t('t_31fde7b0')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+1275: {avatarFile && `${avatarFile.name} (${(avatarFile.size / 1024 / 1024).toFixed(2)} MB)`}
+1278: <button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}>{t('Hủy')}</button>
+1279: <button className="btn-primary" style={{ flex: 1 }} disabled={isUploadingAvatar} onClick={async () => {
+1280: if (!avatarFile) return;
+1281: setIsUploadingAvatar(true);
+1283: formData.append('file', avatarFile);
+1285: const res = await fetch(`${API_URL}/profile/avatar/upload`, {
+1293: updated.userData.avatar_url = data.avatar_url;
+1297: setIsUploadingAvatar(false);
+1298: setAvatarPreview(null);
+1299: setAvatarFile(null);
+1300: }}>{isUploadingAvatar ? t('Đang tải...') : t('Xác nhận')}</button>
+1306: <div className="avatar-glow" onClick={() => {
+1307: document.getElementById('avatarUpload').click();
+1308: }} style={{ cursor: 'pointer', backgroundImage: currentUser.userData.avatar_url ? `url(${currentUser.userData.avatar_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', color: currentUser.userData.avatar_url ? 'transparent' : 'inherit' }} title={t('t_773e0c7c')}>
+1309: {currentUser.userData.avatar_url ? '' : (currentUser.userData.gender === 'Nam' ? '🧔' : '👩')}
+1783: avatar_url: newProfile.avatar_url

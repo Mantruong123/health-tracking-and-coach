@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
+from datetime import datetime
 
 # --- AUTH SCHEMAS ---
 class UserCreate(BaseModel):
@@ -78,6 +79,51 @@ class ExerciseCreate(ExerciseBase):
 
 class ExerciseResponse(ExerciseBase):
     id: int
+
+    class Config:
+        from_attributes = True
+
+# --- PROGRESS TRACKING SCHEMAS ---
+
+class ExerciseLogCreate(BaseModel):
+    exercise_id: int
+    sets_completed: int
+    reps_completed: int
+    weight_kg: float
+
+class ExerciseLogResponse(ExerciseLogCreate):
+    id: int
+    workout_log_id: int
+
+    class Config:
+        from_attributes = True
+
+class WorkoutLogCreate(BaseModel):
+    duration_minutes: int
+    calories_burned: int
+    notes: Optional[str] = None
+    exercises: List[ExerciseLogCreate]
+
+class WorkoutLogResponse(BaseModel):
+    id: int
+    user_id: int
+    date: datetime
+    duration_minutes: int
+    calories_burned: int
+    notes: Optional[str] = None
+    exercises: List[ExerciseLogResponse]
+
+    class Config:
+        from_attributes = True
+
+class BodyMeasurementCreate(BaseModel):
+    weight: float
+    body_fat_percentage: Optional[float] = None
+
+class BodyMeasurementResponse(BodyMeasurementCreate):
+    id: int
+    user_id: int
+    date: datetime
 
     class Config:
         from_attributes = True
