@@ -120,9 +120,7 @@ class ProfileScreen extends StatelessWidget {
                       height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
-                        ),
+                        color: const Color(0xFF8B5CF6),
                         border: Border.all(color: const Color(0xFF1E293B), width: 4),
                         image: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
                             ? DecorationImage(
@@ -166,7 +164,7 @@ class ProfileScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)]),
+                            color: const Color(0xFF8B5CF6),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(

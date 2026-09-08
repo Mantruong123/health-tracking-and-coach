@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/profile_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:line_icons/line_icons.dart';
 
 import '../services/notification_service.dart';
 import 'active_workout_screen.dart';
@@ -66,11 +67,7 @@ class _MobileDashboardScreenState extends State<MobileDashboardScreen> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: const Color(0xFF8B5CF6),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -180,9 +177,9 @@ class _MobileDashboardScreenState extends State<MobileDashboardScreen> {
                             return ListTile(
                               tileColor: const Color(0xFF0F172A),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              leading: Text(ex.emoji, style: const TextStyle(fontSize: 24)),
+                              leading: const Icon(LineIcons.dumbbell, color: Color(0xFF06B6D4), size: 28),
                               title: Text(ex.name.tr(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                              subtitle: Text('${ex.recommendedSetsReps} | ${ex.muscleGroup}', style: const TextStyle(color: Colors.grey)),
+                              subtitle: Text('${ex.recommendedSetsReps} | ${ex.muscleGroup} | ${_translateDifficulty(ex.difficulty)}', style: const TextStyle(color: Colors.grey)),
                               trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                               onTap: () {
                                 Navigator.push(
@@ -270,5 +267,15 @@ class _MobileDashboardScreenState extends State<MobileDashboardScreen> {
                   ),
                 ),
     );
+  } // Added closing bracket for the build method
+
+  String _translateDifficulty(String diff) {
+    switch (diff) {
+      case 'beginner': return 'Sơ cấp';
+      case 'intermediate': return 'Trung cấp';
+      case 'advanced': return 'Cao cấp';
+      default: return diff;
+    }
   }
 }
+

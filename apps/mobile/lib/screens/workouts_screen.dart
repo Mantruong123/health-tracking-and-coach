@@ -139,7 +139,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                                     children: [
                                       _buildTag(ex.muscleGroup, const Color(0xFF8B5CF6)),
                                       const SizedBox(width: 8),
-                                      _buildTag(ex.difficulty, const Color(0xFF10B981)),
+                                      _buildTag(_translateDifficulty(ex.difficulty), const Color(0xFF10B981)),
                                       const SizedBox(width: 8),
                                       _buildTag(ex.equipment, const Color(0xFFF59E0B)),
                                     ],
@@ -200,5 +200,14 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       ),
       child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
+  }
+
+  String _translateDifficulty(String diff) {
+    switch (diff) {
+      case 'beginner': return 'Sơ cấp';
+      case 'intermediate': return 'Trung cấp';
+      case 'advanced': return 'Cao cấp';
+      default: return diff;
+    }
   }
 }

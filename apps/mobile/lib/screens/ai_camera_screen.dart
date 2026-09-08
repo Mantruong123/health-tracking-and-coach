@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../widgets/pose_painter.dart';
 
 class AiCameraScreen extends StatefulWidget {
@@ -22,13 +23,19 @@ class AiCameraScreen extends StatefulWidget {
 class _AiCameraScreenState extends State<AiCameraScreen> {
   CameraController? _cameraController;
   final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
+  final FlutterTts _flutterTts = FlutterTts();
+  bool _hasSaidReady = false;
   bool _isBusy = false;
   final List<Pose> _poses = [];
   CustomPaint? _customPaint;
 
-  // Squat counting logic
-  int _repCount = 0;
+  // Counting logic
+  int _repCount = 0; // For holds
+  int _correctReps = 0;
+  int _incorrectReps = 0;
+  bool _isCurrentRepIncorrect = false;
   String _squatState = "UP";
+  DateTime _lastRepTime = DateTime.now();
   
   // Timer cho bài tập Hold
   Timer? _holdTimer;
@@ -44,6 +51,8 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
   @override
   void initState() {
     super.initState();
+    _flutterTts.setLanguage("en-US");
+    _flutterTts.setSpeechRate(0.5);
     _initializeCamera();
     _startPrepTimer();
   }
@@ -77,8 +86,10 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
   }
 
   void _checkTargetReached() async {
-    if (!_hasFinished && widget.targetReps != null && _repCount >= widget.targetReps!) {
+    int countToCheck = widget.isHold ? _repCount : _correctReps;
+    if (!_hasFinished && widget.targetReps != null && countToCheck >= widget.targetReps!) {
       _hasFinished = true;
+      _flutterTts.speak("Workout complete");
       _holdTimer?.cancel();
       _prepTimer?.cancel();
       
@@ -87,7 +98,7 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
+          builder: (dialogContext) => AlertDialog(
             backgroundColor: const Color(0xFF1E293B),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             content: Column(
@@ -98,17 +109,26 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
                 const Text('Hoàn thành!', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 const Text('Chúc mừng bạn đã hoàn thành bài tập', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(dialogContext); // Đóng Dialog
+                      Navigator.pop(context, countToCheck); // Đóng Camera Screen
+                    },
+                    child: const Text('Thoát', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
               ],
             ),
           ),
         );
-        
-        // Đợi 2 giây để user nhìn thấy thông báo, sau đó tự động tắt
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.pop(context); // Đóng Dialog
-          Navigator.pop(context, _repCount); // Đóng Camera Screen và trả về kết quả
-        }
       }
     }
   }
@@ -166,7 +186,7 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
       final poses = await _poseDetector.processImage(inputImage);
       
       // Rep Counter Logic
-      if (!widget.isHold && _prepTime == 0) {
+      if (!widget.isHold && _prepTime == 0 && !_hasFinished) {
         _processReps(poses);
         _checkTargetReached();
       }
@@ -203,18 +223,39 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
       final wrist = pose.landmarks[PoseLandmarkType.rightWrist];
       
       if (shoulder != null && elbow != null && wrist != null && 
-          shoulder.likelihood > 0.5 && elbow.likelihood > 0.5 && wrist.likelihood > 0.5) {
+          shoulder.likelihood > 0.7 && elbow.likelihood > 0.7 && wrist.likelihood > 0.7) {
         
+        if (!_hasSaidReady) {
+          _flutterTts.speak("Ready");
+          _hasSaidReady = true;
+        }
+
+        // Check arm swinging
+        final hip = pose.landmarks[PoseLandmarkType.rightHip];
+        if (hip != null && hip.likelihood > 0.7) {
+          double swingAngle = _calculateAngle(elbow.x, elbow.y, shoulder.x, shoulder.y, hip.x, hip.y);
+          if (swingAngle > 35) _isCurrentRepIncorrect = true;
+        }
+
         double angle = _calculateAngle(shoulder.x, shoulder.y, elbow.x, elbow.y, wrist.x, wrist.y);
         
-        // Gập tay vào (co cơ)
         if (angle < 60) {
-          _squatState = "UP"; // Dùng UP tượng trưng cho co tay
-        } 
-        // Duỗi tay ra
-        else if (angle > 140 && _squatState == "UP") {
-          _squatState = "DOWN"; // Dùng DOWN tượng trưng cho duỗi tay
-          _repCount++;
+          _squatState = "UP_FULL";
+        } else if (angle < 100 && (_squatState == "DOWN" || _squatState == "UP_HALF")) {
+          if (_squatState == "DOWN") _squatState = "UP_HALF";
+        } else if (angle > 140 && (_squatState == "UP_FULL" || _squatState == "UP_HALF")) {
+          if (DateTime.now().difference(_lastRepTime).inMilliseconds > 1000) {
+            if (_squatState == "UP_FULL" && !_isCurrentRepIncorrect) {
+              _correctReps++;
+              _flutterTts.speak(_correctReps.toString());
+            } else {
+              _incorrectReps++;
+              _flutterTts.speak("Incorrect");
+            }
+            _lastRepTime = DateTime.now();
+          }
+          _squatState = "DOWN";
+          _isCurrentRepIncorrect = false;
         }
       }
     }
@@ -225,15 +266,40 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
       final wrist = pose.landmarks[PoseLandmarkType.rightWrist];
       
       if (shoulder != null && elbow != null && wrist != null && 
-          shoulder.likelihood > 0.5 && elbow.likelihood > 0.5 && wrist.likelihood > 0.5) {
+          shoulder.likelihood > 0.7 && elbow.likelihood > 0.7 && wrist.likelihood > 0.7) {
         
+        if (!_hasSaidReady) {
+          _flutterTts.speak("Ready");
+          _hasSaidReady = true;
+        }
+
+        // Check body straightness
+        final hip = pose.landmarks[PoseLandmarkType.rightHip];
+        final ankle = pose.landmarks[PoseLandmarkType.rightAnkle];
+        if (hip != null && ankle != null && hip.likelihood > 0.7 && ankle.likelihood > 0.7) {
+          double bodyAngle = _calculateAngle(shoulder.x, shoulder.y, hip.x, hip.y, ankle.x, ankle.y);
+          if (bodyAngle < 150) _isCurrentRepIncorrect = true;
+        }
+
         double angle = _calculateAngle(shoulder.x, shoulder.y, elbow.x, elbow.y, wrist.x, wrist.y);
         
         if (angle < 90) {
-          _squatState = "DOWN";
-        } else if (angle > 150 && _squatState == "DOWN") {
+          _squatState = "DOWN_DEEP";
+        } else if (angle < 120 && (_squatState == "UP" || _squatState == "DOWN_SHALLOW")) {
+          if (_squatState == "UP") _squatState = "DOWN_SHALLOW";
+        } else if (angle > 150 && (_squatState == "DOWN_DEEP" || _squatState == "DOWN_SHALLOW")) {
+          if (DateTime.now().difference(_lastRepTime).inMilliseconds > 1000) {
+            if (_squatState == "DOWN_DEEP" && !_isCurrentRepIncorrect) {
+              _correctReps++;
+              _flutterTts.speak(_correctReps.toString());
+            } else {
+              _incorrectReps++;
+              _flutterTts.speak("Incorrect");
+            }
+            _lastRepTime = DateTime.now();
+          }
           _squatState = "UP";
-          _repCount++;
+          _isCurrentRepIncorrect = false;
         }
       }
     } 
@@ -244,15 +310,31 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
       final ankle = pose.landmarks[PoseLandmarkType.rightAnkle];
       
       if (hip != null && knee != null && ankle != null && 
-          hip.likelihood > 0.5 && knee.likelihood > 0.5 && ankle.likelihood > 0.5) {
+          hip.likelihood > 0.7 && knee.likelihood > 0.7 && ankle.likelihood > 0.7) {
         
+        if (!_hasSaidReady) {
+          _flutterTts.speak("Ready");
+          _hasSaidReady = true;
+        }
+
         double angle = _calculateAngle(hip.x, hip.y, knee.x, knee.y, ankle.x, ankle.y);
 
         if (angle < 100) {
-          _squatState = "DOWN";
-        } else if (angle > 160 && _squatState == "DOWN") {
+          _squatState = "DOWN_DEEP";
+        } else if (angle < 130 && (_squatState == "UP" || _squatState == "DOWN_SHALLOW")) {
+          if (_squatState == "UP") _squatState = "DOWN_SHALLOW";
+        } else if (angle > 160 && (_squatState == "DOWN_DEEP" || _squatState == "DOWN_SHALLOW")) {
+          if (DateTime.now().difference(_lastRepTime).inMilliseconds > 1000) {
+            if (_squatState == "DOWN_DEEP") {
+              _correctReps++;
+              _flutterTts.speak(_correctReps.toString());
+            } else {
+              _incorrectReps++;
+              _flutterTts.speak("Incorrect");
+            }
+            _lastRepTime = DateTime.now();
+          }
           _squatState = "UP";
-          _repCount++;
         }
       }
     }
@@ -298,24 +380,18 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
           Positioned(
             top: 50,
             left: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => Navigator.pop(context, _repCount),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   decoration: BoxDecoration(
                     color: const Color(0xFF8B5CF6).withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         widget.exerciseName.isNotEmpty ? widget.exerciseName : 'Tập Luyện',
@@ -327,27 +403,63 @@ class _AiCameraScreenState extends State<AiCameraScreen> {
                           style: const TextStyle(fontSize: 14, color: Colors.white70),
                         ),
                       Text(
-                        widget.isHold ? 'Thời gian: $_repCount giây${widget.targetReps != null ? ' / ${widget.targetReps}' : ''}' : 'Reps: $_repCount${widget.targetReps != null ? ' / ${widget.targetReps}' : ''}',
+                        widget.isHold ? 'Thời gian: $_repCount s' : 'Tiến độ: $_correctReps${widget.targetReps != null ? ' / ${widget.targetReps}' : ''}',
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
                   ),
                 ),
-                if (widget.isHold) ...[
-                  const SizedBox(height: 10),
-                  FloatingActionButton.extended(
-                    heroTag: "pause_play",
-                    backgroundColor: _isPaused ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                    onPressed: () {
-                      setState(() {
-                        _isPaused = !_isPaused;
-                      });
-                    },
-                    icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause, color: Colors.white),
-                    label: Text(_isPaused ? 'Tiếp tục' : 'Tạm dừng', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 12),
+                IntrinsicWidth(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!widget.isHold) ...[
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(16)),
+                          child: Text('Đúng: $_correctReps', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(16)),
+                          child: Text('Sai: $_incorrectReps', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+                        ),
+                      ],
+                      if (widget.isHold) ...[
+                        FloatingActionButton.extended(
+                          heroTag: "pause_play",
+                          backgroundColor: _isPaused ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                          onPressed: () {
+                            setState(() {
+                              _isPaused = !_isPaused;
+                            });
+                          },
+                          icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause, color: Colors.white),
+                          label: Text(_isPaused ? 'Tiếp tục' : 'Tạm dừng', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ]
+                    ],
                   ),
-                ]
+                )
               ],
+            ),
+          ),
+          Positioned(
+            top: 50,
+            right: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context, widget.isHold ? _repCount : _correctReps),
+              ),
             ),
           ),
           Positioned(

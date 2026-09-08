@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
@@ -53,19 +54,19 @@ class _MainNavigatorState extends State<MainNavigator> {
       bottomNavigationBar: BottomNavigationBar(
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: const Icon(Icons.dashboard),
+            icon: const Icon(LineIcons.home),
             label: 't_dc7161be'.tr(),
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.fitness_center),
+            icon: const Icon(LineIcons.dumbbell),
             label: 't_510117ab'.tr(),
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.restaurant),
+            icon: const Icon(LineIcons.apple),
             label: 't_0595a756'.tr(),
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.person),
+            icon: const Icon(LineIcons.user),
             label: 't_7d97481b'.tr(),
           ),
         ],

@@ -1,1 +1,63 @@
-node_modules
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Node / React / Web (Frontend & Root)
+node_modules/
+dist/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python / FastAPI (Backend)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+env/
+*.sqlite3
+*.db
+
+# Flutter / Dart (Mobile App)
+.dart_tool/
+.packages
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+*.log
+*.jks
+*.keystore
+android/key.properties
+android/local.properties
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.podspec
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# Temporary / Scratch / Backups
+scratch/
+aurafit_backup.sql
+*.bak
+*.tmp

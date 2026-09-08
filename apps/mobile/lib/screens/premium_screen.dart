@@ -137,9 +137,7 @@ class _PremiumScreenState extends State<PremiumScreen> with WidgetsBindingObserv
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
-                      ),
+                      color: const Color(0xFF8B5CF6),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

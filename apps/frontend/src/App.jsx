@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
+import { Zap, User, Users, Dumbbell, Trash2, Flame, Activity, Accessibility, Laptop, Medal, Search, LogOut, CheckCircle, ChevronDown, Check, X, Shield, Plus, Building2, Hand } from 'lucide-react';
 import './App.css';
 
 // API Base URL (sử dụng proxy trong Vite)
@@ -454,16 +455,16 @@ function App() {
             <h3 style={{ marginBottom: '20px' }}>{isOnboardingRetake ? t('Bước 1') : t('Bước 3')}: {t('Chọn mục tiêu chính')}</h3>
             <div className="options-grid">
               <div className={`option-card ${onboardingData.goal === 'lose_weight' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'lose_weight' })}>
-                <span className="option-icon">🔥</span><span className="option-title">{t('t_37d2f642')}</span>
+                <span className="option-icon"><Flame size={32} strokeWidth={1.5} /></span><span className="option-title">{t('t_37d2f642')}</span>
               </div>
               <div className={`option-card ${onboardingData.goal === 'build_muscle' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'build_muscle' })}>
-                <span className="option-icon">💪</span><span className="option-title">{t('t_89458a14')}</span>
+                <span className="option-icon"><Dumbbell size={32} strokeWidth={1.5} /></span><span className="option-title">{t('t_89458a14')}</span>
               </div>
               <div className={`option-card ${onboardingData.goal === 'improve_endurance' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'improve_endurance' })}>
-                <span className="option-icon">🏃</span><span className="option-title">{t('t_1e940d47')}</span>
+                <span className="option-icon"><Activity size={32} strokeWidth={1.5} /></span><span className="option-title">{t('t_1e940d47')}</span>
               </div>
               <div className={`option-card ${onboardingData.goal === 'stay_fit' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, goal: 'stay_fit' })}>
-                <span className="option-icon">🧘</span><span className="option-title">{t('t_93ccb44b')}</span>
+                <span className="option-icon"><Accessibility size={32} strokeWidth={1.5} /></span><span className="option-title">{t('t_93ccb44b')}</span>
               </div>
             </div>
           </div>
@@ -475,29 +476,29 @@ function App() {
             <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>{t('t_a397dd40')}</label>
             <div className="options-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
               <div className={`option-card ${onboardingData.equipment === 'none' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'none' })} style={{ padding: '8px 12px', gap: '6px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🙌</span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_9a400b4c')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Hand size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_9a400b4c')}</span>
               </div>
               <div className={`option-card ${onboardingData.equipment === 'dumbbell' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'dumbbell' })} style={{ padding: '8px 12px', gap: '6px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏋️</span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_bbaceaf7')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Dumbbell size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_bbaceaf7')}</span>
               </div>
               <div className={`option-card ${onboardingData.equipment === 'barbell' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'barbell' })} style={{ padding: '8px 12px', gap: '6px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏋️‍♀️</span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_8e4e7d4d')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Dumbbell size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_8e4e7d4d')}</span>
               </div>
               <div className={`option-card ${onboardingData.equipment === 'gym' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, equipment: 'gym' })} style={{ padding: '8px 12px', gap: '6px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏢</span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_c6e40fd1')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Building2 size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.85rem' }}>{t('t_c6e40fd1')}</span>
               </div>
             </div>
 
             <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>{t('t_ef545456')}</label>
             <div className="options-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               <div className={`option-card ${onboardingData.experience === 'sedentary' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, experience: 'sedentary' })} style={{ padding: '8px 12px', flexDirection: 'column', gap: '4px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>💻</span><span className="option-title" style={{ fontSize: '0.8rem' }}>{t('t_ed318449')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Laptop size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.8rem' }}>{t('t_ed318449')}</span>
               </div>
               <div className={`option-card ${onboardingData.experience === 'active' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, experience: 'active' })} style={{ padding: '8px 12px', flexDirection: 'column', gap: '4px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏃</span><span className="option-title" style={{ fontSize: '0.8rem' }}>{t('t_b3ae93fe')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Activity size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.8rem' }}>{t('t_b3ae93fe')}</span>
               </div>
               <div className={`option-card ${onboardingData.experience === 'athletic' ? 'selected' : ''}`} onClick={() => setOnboardingData({ ...onboardingData, experience: 'athletic' })} style={{ padding: '8px 12px', flexDirection: 'column', gap: '4px' }}>
-                <span className="option-icon" style={{ fontSize: '1.5rem' }}>🏅</span><span className="option-title" style={{ fontSize: '0.8rem' }}>{t('t_b52798e8')}</span>
+                <span className="option-icon" style={{ fontSize: '1.5rem' }}><Medal size={24} strokeWidth={1.5} /></span><span className="option-title" style={{ fontSize: '0.8rem' }}>{t('t_b52798e8')}</span>
               </div>
             </div>
           </div>
@@ -528,7 +529,7 @@ function App() {
       <header className="app-header">
         <div className="container nav-container">
           <div className="logo-group" onClick={() => setAppState('landing')}>
-            <span className="logo-icon">⚡</span>
+            <span className="logo-icon"><Zap size={28} /></span>
             <span className="logo-text">{t('t_0fa8c7e7')}</span>
           </div>
           
@@ -565,7 +566,7 @@ function App() {
               
               {isDropdownOpen && (
                 <div className="dropdown-menu">
-                  <div className="dropdown-item static">👤 {currentUser.userData?.name || currentUser.username}</div>
+                  <div className="dropdown-item static" style={{display: 'flex', alignItems: 'center', gap: '8px'}}><User size={16} /> {currentUser.userData?.name || currentUser.username}</div>
                   <button 
                     className="dropdown-item"
                     onClick={() => {
@@ -620,21 +621,23 @@ function App() {
       <div className="admin-layout">
         <aside className="admin-sidebar">
           <div className="admin-logo">
-            <span className="logo-icon">⚡</span>
+            <span className="logo-icon"><Zap size={28} /></span>
             <span className="logo-text">{t('t_68483242')}</span>
           </div>
           <nav className="admin-nav">
             <button 
               className={`admin-nav-item ${appState === 'admin_users' ? 'active' : ''}`}
               onClick={() => setAppState('admin_users')}
+              style={{display: 'flex', alignItems: 'center', gap: '8px'}}
             >
-              👤 {t("Quản lý Users")}
+              <Users size={20} /> {t("Quản lý Users")}
             </button>
             <button 
               className={`admin-nav-item ${appState === 'admin_exercises' ? 'active' : ''}`}
               onClick={() => setAppState('admin_exercises')}
+              style={{display: 'flex', alignItems: 'center', gap: '8px'}}
             >
-              🏋️ {t("Quản lý Bài Tập")}
+              <Dumbbell size={20} /> {t("Quản lý Bài Tập")}
             </button>
           </nav>
         </aside>
@@ -779,13 +782,18 @@ function App() {
                             onClick={async () => {
                               if (window.confirm('Xóa user này?')) {
                                 try {
-                                  await fetch(`${API_URL}/users/${u.id}`, { method: 'DELETE', headers: getAuthHeaders() });
-                                  setUsersDb(usersDb.filter(user => user.id !== u.id));
+                                  const res = await fetch(`${API_URL}/users/${u.id}`, { method: 'DELETE', headers: getAuthHeaders() });
+                                  if (res.ok) {
+                                    setUsersDb(usersDb.filter(user => user.id !== u.id));
+                                  } else {
+                                    const data = await res.json();
+                                    alert(data.detail || t('t_ae787bd4'));
+                                  }
                                 } catch (err) { alert(t('t_ae787bd4')) }
                               }
                             }}
                           >
-                            🗑 Xóa
+                            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><Trash2 size={16} /> Xóa</div>
                           </button>
                         </td>
                       </tr>
@@ -1569,38 +1577,71 @@ function App() {
 
                 {/* Section 2: Chế độ dinh dưỡng */}
                 {dashboardActiveTab === 'nutrition' && (
-                  <div className="glass-card">
-                    <h3 style={{ marginBottom: '16px' }}>{t('t_d8a8e28b')}</h3>
+                  <div className="glass-card" style={{ padding: '32px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                      <h3 style={{ fontSize: '1.8rem', margin: '0 0 8px 0', color: 'var(--color-primary)' }}>{t('t_d8a8e28b')}</h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
+                        {t('Thiết kế chuyên biệt để giúp bạn đạt mục tiêu hiệu quả nhất')}
+                      </p>
+                    </div>
                     
-                    <div className="nutrition-header">
+                    <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '24px', padding: '24px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
                       <div style={{ textAlign: 'center' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('t_711cd7d3')}</span>
-                        <h2 style={{ fontSize: '2.5rem', color: 'var(--color-accent-emerald)', margin: '10px 0' }}>
-                          {currentUser.aiOutput.targetCalories} <span style={{ fontSize: '1rem', color: 'var(--text-main)' }}>{t('t_f1d9d448')}</span>
-                        </h2>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{t('Tổng lượng Calo mục tiêu')}</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '3.5rem', fontWeight: '800', color: 'var(--color-primary)' }}>
+                            {currentUser.aiOutput.targetCalories}
+                          </span>
+                          <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)', fontWeight: '600' }}>kcal/ngày</span>
+                        </div>
                       </div>
-                      <div className="macros-wrapper" style={{ marginTop: 0 }}>
-                        {Object.entries(currentUser.aiOutput.macros).map(([key, macro]) => (
-                          <div className="macro-ring-box" key={key}>
-                            <span className="macro-label" style={{ color: macro.color }}>
-                              {key === 'protein' ? 'Protein' : key === 'carbs' ? 'Carbs' : 'Fat'}
-                            </span>
-                            <div style={{ fontSize: '1.1rem', fontWeight: '800' }}>{macro.grams}g</div>
-                          </div>
-                        ))}
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%' }}>
+                        {Object.entries(currentUser.aiOutput.macros).map(([key, macro]) => {
+                          const macroGrams = typeof macro === 'object' && macro !== null ? macro.grams || macro.amount : macro;
+                          const color = key === 'protein' ? '#ef4444' : key === 'carbs' ? '#f59e0b' : '#3b82f6';
+                          const bgGradient = 'var(--bg-glass-card)';
+                          const label = key === 'protein' ? 'Protein' : key === 'carbs' ? 'Carbs' : 'Fat';
+                          return (
+                            <div key={key} style={{ background: bgGradient, borderRadius: '16px', padding: '16px', textAlign: 'center', border: `1px solid ${color}40`, position: 'relative', overflow: 'hidden' }}>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px' }}>
+                                {label}
+                              </span>
+                              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff' }}>{macroGrams}g</div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    <div className="meal-plan-section">
-                      <h4 style={{ marginBottom: '12px', fontSize: '1.1rem' }}>{t('t_af03447b')}</h4>
-                      <div className="meals-list">
-                        {currentUser.aiOutput.meals.map((meal, index) => (
-                          <div className="meal-card" key={index}>
-                            <span className="meal-tag">{t(meal.type)}</span>
-                            <h4 style={{ fontSize: '0.95rem' }}>{t(meal.name)}</h4>
-                            <div className="meal-calories" style={{ fontSize: '0.85rem' }}>~{meal.cal} kcal</div>
-                          </div>
-                        ))}
+                    <div>
+                      <h4 style={{ marginBottom: '20px', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🍽️</span> {t('t_af03447b')}
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {currentUser.aiOutput.meals.map((meal, index) => {
+                           let icon = '🍴';
+                           const tType = t(meal.type);
+                           if (tType.toLowerCase().includes('sáng')) icon = '🌅';
+                           else if (tType.toLowerCase().includes('trưa')) icon = '☀️';
+                           else if (tType.toLowerCase().includes('tối')) icon = '🌙';
+                           else if (tType.toLowerCase().includes('phụ')) icon = '🍎';
+
+                           return (
+                            <div key={index} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', overflow: 'hidden', transition: 'transform 0.2s, background 0.2s', cursor: 'default' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}>
+                              <div style={{ width: '80px', alignSelf: 'stretch', background: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderRight: '1px solid rgba(255,255,255,0.05)', padding: '10px' }}>
+                                <div style={{ fontSize: '2rem', marginBottom: '4px' }}>{icon}</div>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold', textAlign: 'center' }}>{tType}</span>
+                              </div>
+                              <div style={{ flex: 1, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                                <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', lineHeight: '1.4' }}>{t(meal.name)}</h4>
+                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', whiteSpace: 'nowrap', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                  ~{meal.cal} kcal
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1623,24 +1664,7 @@ function App() {
                         </a>
                       </div>
                     </div>
-                    <div className="qr-code-box">
-                      <svg width="100" height="100" viewBox="0 0 100 100">
-                        <path d="M 0,0 H 30 V 10 H 10 V 30 H 0 Z" fill="#000" />
-                        <path d="M 70,0 H 100 V 30 H 90 V 10 H 70 Z" fill="#000" />
-                        <path d="M 0,100 H 30 V 90 H 10 V 70 H 0 Z" fill="#000" />
-                        <rect x="5" y="5" width="20" height="20" fill="none" stroke="#000" strokeWidth="4" />
-                        <rect x="10" y="10" width="10" height="10" fill="#8B5CF6" />
-                        <rect x="75" y="5" width="20" height="20" fill="none" stroke="#000" strokeWidth="4" />
-                        <rect x="80" y="80" width="15" height="15" fill="#06B6D4" />
-                        <rect x="35" y="15" width="5" height="10" fill="#000" />
-                        <rect x="45" y="5" width="10" height="5" fill="#000" />
-                        <rect x="40" y="25" width="15" height="5" fill="#000" />
-                        <rect x="25" y="60" width="10" height="10" fill="#8B5CF6" />
-                        <rect x="45" y="45" width="15" height="15" fill="#8B5CF6" />
-                        <rect x="65" y="35" width="10" height="5" fill="#000" />
-                        <rect x="50" y="85" width="15" height="5" fill="#000" />
-                      </svg>
-                    </div>
+
                   </div>
                 )}
               </section>

@@ -470,9 +470,23 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: model
         raise HTTPException(status_code=404)
     if user.username == "admin":
         raise HTTPException(status_code=403, detail="Không thể xóa System Admin")
-    db.delete(user)
-    db.commit()
-    return {"message": "Deleted"}
+        
+    try:
+        # Xóa các dữ liệu phụ thuộc
+        workout_logs = db.query(models.WorkoutLog).filter(models.WorkoutLog.user_id == user_id).all()
+        for wl in workout_logs:
+            db.query(models.ExerciseLog).filter(models.ExerciseLog.workout_log_id == wl.id).delete()
+            
+        db.query(models.WorkoutLog).filter(models.WorkoutLog.user_id == user_id).delete()
+        db.query(models.BodyMeasurement).filter(models.BodyMeasurement.user_id == user_id).delete()
+        db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).delete()
+        
+        db.delete(user)
+        db.commit()
+        return {"message": "Deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- PROGRESS TRACKING APIs ---
 

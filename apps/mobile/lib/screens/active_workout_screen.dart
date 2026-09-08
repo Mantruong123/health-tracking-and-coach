@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import '../models/profile_model.dart';
 import '../providers/auth_provider.dart';
+import 'package:line_icons/line_icons.dart';
 import '../providers/progress_provider.dart';
 import '../providers/profile_provider.dart';
 import 'ai_camera_screen.dart';
@@ -163,7 +164,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 Container(
                   width: 60, height: 60,
                   decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(16)),
-                  child: Center(child: Text(ex.emoji, style: const TextStyle(fontSize: 32))),
+                  child: const Center(child: Icon(LineIcons.dumbbell, color: Color(0xFF06B6D4), size: 32)),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

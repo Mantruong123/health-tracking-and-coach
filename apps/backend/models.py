@@ -16,6 +16,8 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    workout_logs = relationship("WorkoutLog", back_populates="user", cascade="all, delete-orphan")
+    measurements = relationship("BodyMeasurement", back_populates="user", cascade="all, delete-orphan")
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -73,7 +75,7 @@ class WorkoutLog(Base):
     calories_burned = Column(Integer, default=0)
     notes = Column(Text, nullable=True)
 
-    user = relationship("User", backref="workout_logs")
+    user = relationship("User", back_populates="workout_logs")
     exercises = relationship("ExerciseLog", back_populates="workout_log", cascade="all, delete-orphan")
 
 class ExerciseLog(Base):
@@ -98,4 +100,4 @@ class BodyMeasurement(Base):
     weight = Column(Float, nullable=False)
     body_fat_percentage = Column(Float, nullable=True)
     
-    user = relationship("User", backref="measurements")
+    user = relationship("User", back_populates="measurements")
