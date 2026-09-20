@@ -27,7 +27,7 @@ services:
       - ENV=development
       - PORT=8000
       - DATABASE_URL=postgresql://neondb_owner:npg_lnHvQVyd7b2T@ep-cool-dew-ao5gabry.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-      - RESEND_API_KEY=re_8a3yZGm2_KLAX6oTmoaeXCNpvVoMn44jr
+      - RESEND_API_KEY=${RESEND_API_KEY}
     depends_on:
       - db
     restart: always
