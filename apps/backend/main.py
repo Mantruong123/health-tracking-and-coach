@@ -17,6 +17,7 @@ import auth
 import email_service
 import payment
 from database import engine, get_db, Base
+import video_utils
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -428,6 +429,35 @@ def update_exercise(ex_id: int, exercise: schemas.ExerciseCreate, db: Session = 
     db.commit()
     db.refresh(db_ex)
     return db_ex
+
+@app.post("/api/exercises/{ex_id}/reference-video")
+async def upload_reference_video(
+    ex_id: int, 
+    file: UploadFile = File(...), 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_admin_user)
+):
+    db_ex = db.query(models.Exercise).filter(models.Exercise.id == ex_id).first()
+    if not db_ex:
+        raise HTTPException(status_code=404, detail="Not found")
+        
+    temp_file = f"temp_{ex_id}_{file.filename}"
+    with open(temp_file, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        pose_data_json = video_utils.extract_reference_angles(temp_file)
+        db_ex.reference_pose_data = pose_data_json
+        db.commit()
+    except Exception as e:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+        
+    if os.path.exists(temp_file):
+        os.remove(temp_file)
+        
+    return {"message": "Reference video processed", "reference_pose_data": pose_data_json}
 
 # --- ADMIN USER MANAGEMENT ---
 @app.get("/api/users")

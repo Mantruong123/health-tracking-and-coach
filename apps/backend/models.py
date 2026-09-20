@@ -64,6 +64,7 @@ class Exercise(Base):
     recommended_sets_reps = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     emoji = Column(String)
+    reference_pose_data = Column(Text, nullable=True)
 
 class WorkoutLog(Base):
     __tablename__ = "workout_logs"

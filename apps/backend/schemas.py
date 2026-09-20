@@ -79,6 +79,7 @@ class ExerciseCreate(ExerciseBase):
 
 class ExerciseResponse(ExerciseBase):
     id: int
+    reference_pose_data: Optional[str] = None
 
     class Config:
         from_attributes = True

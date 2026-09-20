@@ -73,6 +73,7 @@ function App() {
   const [editingExerciseId, setEditingExerciseId] = useState(null);
   const [adminExerciseFilter, setAdminExerciseFilter] = useState('Tất cả');
   const [adminNewUser, setAdminNewUser] = useState({ username: '', email: '', password: '', confirmPassword: '', is_admin: false });
+  const [viewingPoseData, setViewingPoseData] = useState(null);
 
   // Close dropdown when clicking outside (simple hack for demo)
   useEffect(() => {
@@ -174,7 +175,7 @@ function App() {
         }
         setLoginForm({ identifier: '', password: '' });
       } else {
-        setAuthError(data.detail || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
+        setAuthError(data.detail || t('Tên đăng nhập hoặc mật khẩu không chính xác.'));
       }
     } catch (err) {
       setAuthError(t('t_49fe44a7'));
@@ -202,7 +203,7 @@ function App() {
         setRegisterForm({ username: '', email: '', password: '', confirmPassword: '' });
         setAppState('activation_pending');
       } else {
-        setAuthError(data.detail || 'Tên đăng nhập hoặc Email đã tồn tại.');
+        setAuthError(data.detail || t('Tên đăng nhập hoặc Email đã tồn tại.'));
       }
     } catch (err) {
       setAuthError(t('t_49fe44a7'));
@@ -218,7 +219,7 @@ function App() {
         setActivationTokenForTest(null);
         setAppState('login');
       } else {
-        alert(data.detail || 'Lỗi kích hoạt');
+        alert(data.detail || t('Lỗi kích hoạt'));
       }
     } catch (err) {
       alert(t('t_49fe44a7'));
@@ -250,8 +251,6 @@ function App() {
     }
   }, []);
 
-  
-
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -265,7 +264,7 @@ function App() {
       if (res.ok) {
         setAppState('forgot_password_pending');
       } else {
-        setAuthError(data.detail || 'Có lỗi xảy ra.');
+        setAuthError(data.detail || t('Có lỗi xảy ra.'));
       }
     } catch (err) {
       setAuthError(t('t_49fe44a7'));
@@ -290,7 +289,7 @@ function App() {
         alert(t('t_4065792b'));
         setAppState('login');
       } else {
-        setAuthError(data.detail || 'Có lỗi xảy ra.');
+        setAuthError(data.detail || t('Có lỗi xảy ra.'));
       }
     } catch (err) {
       setAuthError(t('t_49fe44a7'));
@@ -348,6 +347,33 @@ function App() {
     };
   };
 
+  const handleUploadReferenceVideo = async (exId, file, event) => {
+    if (!file) return;
+    alert(t('Đang phân tích video bằng AI, vui lòng không tắt trang...'));
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`${API_URL}/exercises/${exId}/reference-video`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData
+      });
+      if (res.ok) {
+        const updatedEx = await res.json();
+        setExercisesDb(prev => prev.map(e => e.id === exId ? updatedEx : e));
+        alert(t('Upload thành công! Dữ liệu tư thế đã được trích xuất và lưu.'));
+      } else {
+        const err = await res.json();
+        alert(`Lỗi từ Server: ${err.detail}`);
+      }
+    } catch (err) {
+      alert(t('Lỗi mạng! Bạn đã bật Backend (FastAPI) lên chưa?'));
+    }
+    if (event && event.target) {
+        event.target.value = null;
+    }
+  };
+
   const handleOnboardingSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -376,7 +402,7 @@ function App() {
         setIsOnboardingRetake(false);
       } else {
         const errData = await res.json().catch(() => ({}));
-        alert(`Có lỗi xảy ra khi lưu hồ sơ: ${errData.detail || 'Vui lòng kiểm tra lại thông tin.'}`);
+        alert(`Có lỗi xảy ra khi lưu hồ sơ: ${errData.detail || t('Vui lòng kiểm tra lại thông tin.')}`);
       }
     } catch (err) {
       alert(t('t_aa8ad644'));
@@ -561,7 +587,7 @@ function App() {
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
-                Tài khoản user ▼
+                {t('Tài khoản user ▼')} 
               </button>
               
               {isDropdownOpen && (
@@ -587,7 +613,7 @@ function App() {
                       setIsDropdownOpen(false);
                     }}
                   >
-                    Thông tin tài khoản
+                    {t('Thông tin tài khoản')}
                   </button>
                   <button 
                     className="dropdown-item danger"
@@ -596,7 +622,7 @@ function App() {
                       setIsDropdownOpen(false);
                     }}
                   >
-                    Đăng xuất
+                    {t('Đăng xuất')}
                   </button>
                 </div>
               )}
@@ -718,12 +744,12 @@ function App() {
                             setAdminNewUser({ username: '', email: '', password: '', confirmPassword: '', is_admin: false });
                           } else {
                             const data = await res.json();
-                            alert(data.detail || "Lỗi tạo tài khoản");
+                            alert(data.detail || t("Lỗi tạo tài khoản"));
                           }
                         } catch (err) { alert(t('t_d3880593')); }
                       }}
                     >
-                      Tạo Tài Khoản
+                      {t('Tạo Tài Khoản')}
                     </button>
                   </div>
                 </div>
@@ -780,7 +806,7 @@ function App() {
                             disabled={u.username === 'admin'}
                             style={{ opacity: u.username === 'admin' ? 0.5 : 1 }}
                             onClick={async () => {
-                              if (window.confirm('Xóa user này?')) {
+                              if (window.confirm(t('Xóa user này?'))) {
                                 try {
                                   const res = await fetch(`${API_URL}/users/${u.id}`, { method: 'DELETE', headers: getAuthHeaders() });
                                   if (res.ok) {
@@ -793,7 +819,7 @@ function App() {
                               }
                             }}
                           >
-                            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><Trash2 size={16} /> Xóa</div>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><Trash2 size={16} /> {t('Xóa')}</div>
                           </button>
                         </td>
                       </tr>
@@ -902,7 +928,7 @@ function App() {
                       } catch (err) { alert(t('t_d3880593')); }
                     }}
                   >
-                    {editingExerciseId ? 'Cập nhật' : 'Thêm +'}
+                    {editingExerciseId ? t('Cập nhật') : t('Thêm +')}
                   </button>
                   {editingExerciseId && (
                     <button 
@@ -914,7 +940,7 @@ function App() {
                         });
                       }}
                     >
-                      Hủy
+                      {t('Hủy')}
                     </button>
                   )}
                 </div>
@@ -965,6 +991,29 @@ function App() {
                         <td>
                           <button 
                             className="action-btn"
+                            style={{ marginRight: '8px', background: '#3b82f6', color: 'white' }}
+                            onClick={() => document.getElementById(`upload-ref-${ex.id}`).click()}
+                          >
+                            📷 {t('Video chuẩn')}
+                          </button>
+                          <input 
+                            type="file" 
+                            id={`upload-ref-${ex.id}`} 
+                            style={{ display: 'none' }} 
+                            accept="video/mp4,video/x-m4v,video/*"
+                            onChange={(e) => handleUploadReferenceVideo(ex.id, e.target.files[0], e)}
+                          />
+                          {ex.reference_pose_data && (
+                            <button 
+                              className="action-btn"
+                              style={{ marginRight: '8px', background: 'var(--color-accent-purple)', color: 'white' }}
+                              onClick={() => setViewingPoseData(ex)}
+                            >
+                              👀 Data
+                            </button>
+                          )}
+                          <button 
+                            className="action-btn"
                             style={{ marginRight: '8px' }}
                             onClick={() => {
                               setEditingExerciseId(ex.id);
@@ -976,12 +1025,12 @@ function App() {
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                           >
-                            ✏ Sửa
+                            ✏ {t('Sửa')}
                           </button>
                           <button 
                             className="action-btn delete"
                             onClick={async () => {
-                              if (window.confirm('Xóa bài tập này?')) {
+                              if (window.confirm(t('Xóa bài tập này?'))) {
                                 try {
                                   const res = await fetch(`${API_URL}/exercises/${ex.id}`, { method: 'DELETE', headers: getAuthHeaders() });
                                   if (res.ok) setExercisesDb(exercisesDb.filter(e => e.id !== ex.id));
@@ -990,7 +1039,7 @@ function App() {
                               }
                             }}
                           >
-                            🗑 Xóa
+                            🗑 {t('Xóa')}
                           </button>
                         </td>
                       </tr>
@@ -998,6 +1047,27 @@ function App() {
                   </tbody>
                 </table>
               </div>
+              
+              {viewingPoseData && (
+                <div className="modal-overlay" onClick={() => setViewingPoseData(null)}>
+                  <div className="glass-card modal-content" onClick={e => e.stopPropagation()} style={{ width: '80%', maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                      <h3 style={{ margin: 0 }}>{t('Dữ liệu tư thế')}: {viewingPoseData.name}</h3>
+                      <button onClick={() => setViewingPoseData(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+                    </div>
+                    <div style={{ flex: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.5)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all', textAlign: 'left' }}>
+                      {(() => {
+                        try {
+                          return JSON.stringify(JSON.parse(viewingPoseData.reference_pose_data), null, 2);
+                        } catch (e) {
+                          return viewingPoseData.reference_pose_data;
+                        }
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </main>
@@ -1013,8 +1083,8 @@ function App() {
         <div className="container">
 
           {/* ==========================================================================
-             1. LANDING PAGE
-             ========================================================================== */}
+              1. LANDING PAGE
+              ========================================================================== */}
           {appState === 'landing' && (
             <section className="hero-section" style={{ marginTop: '40px' }}>
               <div className="hero-badge">{t('t_00dbddb5')}</div>
@@ -1025,15 +1095,15 @@ function App() {
               <div className="hero-actions">
                 {currentUser ? (
                   <button className="btn-primary" onClick={() => setAppState('dashboard')}>
-                    Trở Về Dashboard
+                    {t('Trở Về Dashboard')}
                   </button>
                 ) : (
                   <>
                     <button className="btn-primary" onClick={() => setAppState('login')}>
-                      Đăng Nhập
+                      {t('Đăng Nhập')}
                     </button>
                     <button className="btn-secondary" onClick={() => setAppState('register')}>
-                      Đăng Ký
+                      {t('Đăng Ký')}
                     </button>
                   </>
                 )}
@@ -1042,8 +1112,8 @@ function App() {
           )}
 
           {/* ==========================================================================
-             2. LOGIN & REGISTER
-             ========================================================================== */}
+              2. LOGIN & REGISTER
+              ========================================================================== */}
           {appState === 'login' && (
             <div className="auth-container">
               <div className="glass-card auth-card">
@@ -1056,7 +1126,7 @@ function App() {
                       type="text" 
                       required 
                       className="form-input" 
-                      value={loginForm.identifier}
+                      value={loginForm.identifier} 
                       onChange={(e) => setLoginForm({...loginForm, identifier: e.target.value})}
                       placeholder={t('t_40c76c26')}
                     />
@@ -1067,7 +1137,7 @@ function App() {
                       type="password" 
                       required 
                       className="form-input" 
-                      value={loginForm.password}
+                      value={loginForm.password} 
                       onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
                       placeholder="••••••••"
                     />
@@ -1076,14 +1146,14 @@ function App() {
                   {authError && <div className="form-error">{authError}</div>}
                   
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px', marginBottom: '24px' }}>
-                    <span className="text-link" onClick={() => setAppState('forgot_password')} style={{ fontSize: '0.85rem' }}>Quên mật khẩu?</span>
+                    <span className="text-link" onClick={() => setAppState('forgot_password')} style={{ fontSize: '0.85rem' }}>{t('Quên mật khẩu?')}</span>
                   </div>
 
                   <button type="submit" className="btn-primary full-width">{t('t_f3b2e129')}</button>
                 </form>
                 
                 <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                  {t('t_66768b62')} <span className="text-link" onClick={() => setAppState('register')}>Đăng ký</span>
+                  {t('t_66768b62')} <span className="text-link" onClick={() => setAppState('register')}>{t('Đăng ký')}</span>
                 </div>
               </div>
             </div>
@@ -1104,7 +1174,7 @@ function App() {
                       className="btn-primary" 
                       onClick={() => handleActivateAccount(activationTokenForTest)}
                     >
-                      Xác thực Tài khoản
+                      {t('Xác thực Tài khoản')}
                     </button>
                   </div>
                 )}
@@ -1188,7 +1258,7 @@ function App() {
                       type="text" 
                       required 
                       className="form-input" 
-                      value={registerForm.username}
+                      value={registerForm.username} 
                       onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
                     />
                   </div>
@@ -1198,7 +1268,7 @@ function App() {
                       type="email" 
                       required 
                       className="form-input" 
-                      value={registerForm.email}
+                      value={registerForm.email} 
                       onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
                     />
                   </div>
@@ -1208,7 +1278,7 @@ function App() {
                       type="password" 
                       required 
                       className="form-input" 
-                      value={registerForm.password}
+                      value={registerForm.password} 
                       onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
                     />
                   </div>
@@ -1218,7 +1288,7 @@ function App() {
                       type="password" 
                       required 
                       className="form-input" 
-                      value={registerForm.confirmPassword}
+                      value={registerForm.confirmPassword} 
                       onChange={(e) => setRegisterForm({...registerForm, confirmPassword: e.target.value})}
                     />
                   </div>
@@ -1229,22 +1299,22 @@ function App() {
                 </form>
                 
                 <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                  {t('t_27d2c72f')} <span className="text-link" onClick={() => setAppState('login')}>Đăng nhập</span>
+                  {t('t_27d2c72f')} <span className="text-link" onClick={() => setAppState('login')}>{t('Đăng nhập')}</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* ==========================================================================
-             3. ONBOARDING WIZARD
-             ========================================================================== */}
+              3. ONBOARDING WIZARD
+              ========================================================================== */}
           {appState === 'onboarding' && !isOnboardingRetake && (
             renderWizardContent()
           )}
 
           {/* ==========================================================================
-             4. DASHBOARD PAGE (NEW LAYOUT)
-             ========================================================================== */}
+              4. DASHBOARD PAGE (NEW LAYOUT)
+              ========================================================================== */}
           {appState === 'dashboard' && currentUser?.aiOutput && (
             <div className="dashboard-layout">
               {/* LEFT SIDEBAR: Personal Stats */}
@@ -1442,7 +1512,7 @@ function App() {
                           {/* Day Selector Tabs */}
                           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                             {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map(day => (
-                                <button key={t(day)} onClick={() => setEditActiveDay(day)} style={{ padding: '6px 14px', fontSize: '0.85rem', border: 'none', background: editActiveDay === day ? 'var(--color-primary)' : 'transparent', color: editActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '8px 8px 0 0', fontWeight: editActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s' }}>
+                                <button key={day} onClick={() => setEditActiveDay(day)} style={{ padding: '6px 14px', fontSize: '0.85rem', border: 'none', background: editActiveDay === day ? 'var(--color-primary)' : 'transparent', color: editActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '8px 8px 0 0', fontWeight: editActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s' }}>
                                     {t(day)} {tempExercises[day]?.length > 0 && `(${tempExercises[day].length})`}
                                 </button>
                             ))}
@@ -1451,19 +1521,19 @@ function App() {
                           <div className="custom-scrollbar" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px' }}>
                             {['Tất cả', 'Cardio', 'Ngực', 'Lưng & Xô', 'Bụng', 'Vai', 'Đùi & Mông', 'Tay trước', 'Tay sau', 'Toàn thân'].map(muscle => (
                                 <button key={muscle} onClick={() => setEditMuscleFilter(muscle)} style={{ padding: '6px 14px', fontSize: '0.85rem', borderRadius: '20px', border: editMuscleFilter === muscle ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)', background: editMuscleFilter === muscle ? 'rgba(56, 189, 248, 0.15)' : 'transparent', color: editMuscleFilter === muscle ? 'var(--color-primary)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>
-                                    {muscle}
+                                    {t(muscle)}
                                 </button>
                             ))}
                           </div>
 
                           <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px', maxHeight: '380px', overflowY: 'auto', paddingRight: '8px' }}>
                               {exercisesDb.filter(ex => editMuscleFilter === 'Tất cả' || ex.muscle_group === editMuscleFilter).map(ex => {
-                                  const isSelected = tempExercises[editActiveDay]?.find(t => t.id === ex.id);
+                                  const isSelected = tempExercises[editActiveDay]?.find(tItem => tItem.id === ex.id);
                                   return (
                                       <div key={ex.id} onClick={() => {
                                           const dayExercises = tempExercises[editActiveDay] || [];
                                           if (isSelected) {
-                                              setTempExercises({ ...tempExercises, [editActiveDay]: dayExercises.filter(t => t.id !== ex.id) });
+                                              setTempExercises({ ...tempExercises, [editActiveDay]: dayExercises.filter(tItem => tItem.id !== ex.id) });
                                           } else {
                                               setTempExercises({ ...tempExercises, [editActiveDay]: [...dayExercises, ex] });
                                           }
@@ -1480,22 +1550,22 @@ function App() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-                        {isEditingExercises ? `${t("Danh sách bài tập ngày ")}${editActiveDay}:` : t("Lịch tập theo ngày trong tuần:")}
+                        {isEditingExercises ? `${t("Danh sách bài tập ngày ")}${t(editActiveDay)}:` : t("Lịch tập theo ngày trong tuần:")}
                       </p>
                       {isEditingExercises && (
                         <div className="detail-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 12px', fontSize: '0.85rem' }}>
-                          🔥 {t("Ước tính")} ({editActiveDay}): <strong>{(tempExercises[editActiveDay] || []).reduce((sum, ex) => sum + (ex.calories_estimated || 0), 0)} kcal</strong>
+                          🔥 {t("Ước tính")} ({t(editActiveDay)}): <strong>{(tempExercises[editActiveDay] || []).reduce((sum, ex) => sum + (ex.calories_estimated || 0), 0)} kcal</strong>
                         </div>
                       )}
                     </div>
 
                     {!isEditingExercises ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', className: 'custom-scrollbar' }}>
+                          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }} className="custom-scrollbar">
                             {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map(day => {
                                 const hasExercises = currentUser.aiOutput.recommendedExercises[day]?.length > 0;
                                 return (
-                                <button key={t(day)} onClick={() => setViewActiveDay(day)} style={{ padding: '6px 14px', fontSize: '0.85rem', border: '1px solid var(--border-glass)', background: viewActiveDay === day ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '20px', fontWeight: viewActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s', position: 'relative' }}>
+                                <button key={day} onClick={() => setViewActiveDay(day)} style={{ padding: '6px 14px', fontSize: '0.85rem', border: '1px solid var(--border-glass)', background: viewActiveDay === day ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewActiveDay === day ? '#fff' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', borderRadius: '20px', fontWeight: viewActiveDay === day ? 'bold' : 'normal', transition: 'all 0.2s', position: 'relative' }}>
                                     {t(day)}
                                     {hasExercises && <span style={{ position: 'absolute', top: '2px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)', boxShadow: '0 0 6px var(--color-primary)' }}></span>}
                                 </button>
@@ -1520,7 +1590,7 @@ function App() {
                                   return (
                                       <>
                                         <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <h4 style={{ margin: 0, color: 'var(--color-primary)' }}>{t("Giáo án ")} {viewActiveDay}</h4>
+                                            <h4 style={{ margin: 0, color: 'var(--color-primary)' }}>{t("Giáo án ")} {t(viewActiveDay)}</h4>
                                             <span style={{ fontSize: '0.85rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{t('t_118a30a8')} <strong>{totalCal} kcal</strong></span>
                                         </div>
                                         <div className="exercises-grid custom-scrollbar" style={{ padding: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
@@ -1549,7 +1619,7 @@ function App() {
                             <button 
                                 onClick={() => {
                                     const dayExercises = tempExercises[editActiveDay] || [];
-                                    setTempExercises({ ...tempExercises, [editActiveDay]: dayExercises.filter(t => t.id !== ex.id) });
+                                    setTempExercises({ ...tempExercises, [editActiveDay]: dayExercises.filter(tItem => tItem.id !== ex.id) });
                                 }}
                                 style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(239, 68, 68, 0.15)', border: 'none', color: '#ef4444', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s', zIndex: 2 }}
                                 title={t('t_f4e3a15b')}
@@ -1768,7 +1838,7 @@ function App() {
                         });
                         if (!authRes.ok) {
                           const errData = await authRes.json().catch(() => ({}));
-                          alert(errData.detail || 'Lỗi khi cập nhật tài khoản');
+                          alert(errData.detail || t('Lỗi khi cập nhật tài khoản'));
                           setIsSavingAccount(false);
                           return;
                         }
@@ -1834,8 +1904,8 @@ function App() {
           )}
 
           {/* ==========================================================================
-             5. SYSTEM EXERCISES LIST PAGE
-             ========================================================================== */}
+              5. SYSTEM EXERCISES LIST PAGE
+              ========================================================================== */}
           {appState === 'exercise_list' && (
             <div style={{ marginTop: '30px', paddingBottom: '60px' }}>
               <h2 style={{ marginBottom: '8px' }}>{t('t_06e3ad7f')}</h2>
@@ -1844,7 +1914,7 @@ function App() {
               <div className="filter-bar">
                 {['Tất cả', 'Ngực', 'Lưng & Xô', 'Đùi & Mông', 'Bụng', 'Tay trước', 'Tay sau', 'Vai', 'Toàn thân'].map(group => (
                   <button 
-                    key={t(group)}
+                    key={group}
                     className={`filter-btn ${muscleFilter === group ? 'active' : ''}`}
                     onClick={() => setMuscleFilter(group)}
                   >
